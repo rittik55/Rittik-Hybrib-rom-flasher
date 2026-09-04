@@ -29,14 +29,6 @@ if [ ! -d "$HOME/storage" ]; then
     exit 1
 fi
 
-if ! cmd package list packages --user 0 com.termux.api < /dev/null 2>/dev/null | grep -q 'com.termux.api'; then
-    echo
-    echo 'com.termux.api app is not installed'
-    echo 'Please install it first'
-    echo
-    exit 1
-fi
-
 arch=$(dpkg --print-architecture)
 
 if [[ "$arch" != "aarch64" && "$arch" != "arm" ]]; then
@@ -63,16 +55,16 @@ run_step "Installing termux-adb" \
 "curl -fsS https://raw.githubusercontent.com/nohajc/termux-adb/master/install.sh | bash"
 
 run_step "symlink termux-adb/termux-fastboot — adb/fastboot" \
-"ln -sf "$PREFIX/bin/termux-fastboot" "$PREFIX/bin/fastboot" && ln -sf "$PREFIX/bin/termux-adb" "$PREFIX/bin/adb""
+'ln -sf "$PREFIX/bin/termux-fastboot" "$PREFIX/bin/fastboot" && ln -sf "$PREFIX/bin/termux-adb" "$PREFIX/bin/adb"'
 
 run_step "Installing colorama" \
 "pip install -U colorama"
 
 run_step "download mitool.py" \
-"curl -fsS "https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/mitool.py" -o "$PREFIX/bin/mitool" && chmod +x "$PREFIX/bin/mitool""
+'curl -fsS "https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/mitool.py" -o "$PREFIX/bin/mitool" && chmod +x "$PREFIX/bin/mitool"'
 
 run_step "download miflashf.py" \
-"curl -fsS "https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/miflashf.py" -o "$PREFIX/bin/miflashf" && chmod +x "$PREFIX/bin/miflashf""
+'curl -fsS "https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/miflashf.py" -o "$PREFIX/bin/miflashf" && chmod +x "$PREFIX/bin/miflashf"'
 
 echo -e "${G}✔ Installation completed successfully${N}\n"
 
