@@ -1,27 +1,74 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
-import asyncio
+import subprocess
+import sys
 import os
-import time
-from fcetool import extract_async
 
-url = input("\nEnter the ROM URL(.zip): ")
-filename = input("\nEnter the name of the filename to extract (e.g., boot.img): ")
+version = "2.0.0"
 
-storage_path = os.path.expanduser("~/storage")
-if os.path.exists(storage_path):
-    output_dir = os.path.join(storage_path, "fcetool_files")
-    os.makedirs(output_dir, exist_ok=True)
+ORANGE = "\033[38;5;208m"
+DIM = "\033[2m"
+BOLD = "\033[1m"
+RED = "\033[1;31m"
+GREEN = "\033[1;32m"
+RESET = "\033[0m"
+
+# Bootloader Unlock option completely removed
+TOOLS = {
+    "1": ("Flash Fastboot ROM", "$PREFIX/bin/miflashf"),
+    "2": ("Mi Assistant", "$PREFIX/bin/miasst"),
+    "3": ("Firmware Content Extractor", "$PREFIX/bin/mifcetool")
+}
+
+try:
+    term_width = os.get_terminal_size().columns
+except:
+    term_width = 80
+
+def get_center(text):
+    clean = text.replace(ORANGE, '').replace(RESET, '').replace(DIM, '').replace(BOLD, '').replace(GREEN, '')
+    pad = max(0, (term_width - len(clean)) // 2)
+    return ' ' * pad + text
+
+print("\n")
+print(get_center(f"{DIM}{'═' * min(term_width, 70)}{RESET}"))
+
+title = f"Rittik Tool ROM Flasher v{version}"
+box_width = len(title) + 4
+print(get_center(f"┏{'━' * (box_width - 2)}┓"))
+print(get_center(f"┃  {ORANGE}{BOLD}Rittik Tool ROM Flasher{RESET} {DIM}v{version}{RESET}  ┃"))
+print(get_center(f"┗{'━' * (box_width - 2)}┛"))
+
+print(get_center(f"{BOLD}Developed by Rittik{RESET}"))
+print(get_center(f"{DIM}github.com/rittik55/Rittik-Hybrib-rom-flasher{RESET}"))
+print(get_center(f"{DIM}{'═' * min(term_width, 70)}{RESET}"))
+print()
+
+print(f"{BOLD}Available Operations:{RESET}\n")
+for key, (desc, _) in TOOLS.items():
+    print(f"  {DIM}▸{RESET} [{ORANGE}{key}{RESET}] {desc}")
+print(f"\n  {DIM}▸{RESET} [{ORANGE}q{RESET}] Quit\n")
+
+if len(sys.argv) > 1:
+    choice = sys.argv[1].lower()
+    print(f"{ORANGE}►{RESET} Selected: {ORANGE}{choice}{RESET}\n")
 else:
-    output_dir = os.path.expanduser("~")
+    try:
+        choice = input(f"{BOLD}►{RESET} Enter choice: ").strip().lower()
+    except (KeyboardInterrupt, EOFError):
+        print(f"\n\n{ORANGE}Cancelled{RESET}")
+        sys.exit(0)
 
-start_time = time.perf_counter()
+if choice in ['q', 'quit', 'exit']:
+    print(f"{ORANGE}Exiting...{RESET}\n")
+    sys.exit(0)
 
-result = asyncio.run(extract_async(url, filename, output_dir))
-
-elapsed = time.perf_counter() - start_time
-
-if result.get("success"):
-    print(f"\n[OK] output: {filename} ({elapsed:.2f}s)\n")
+if choice in TOOLS:
+    desc, cmd = TOOLS[choice]
+    print(f"\n{ORANGE}►{RESET} Executing: {DIM}{cmd}{RESET}\n")
+    print(f"{DIM}{'─' * min(term_width, 70)}{RESET}\n")
+    subprocess.run(cmd, shell=True)
 else:
-    print(f"\n[FAIL] {result.get('error')} ({elapsed:.2f}s)\n")
+    print(f"{RED}✗ Invalid:{RESET} '{choice}'")
+    print(f"{DIM}Select 1-3 or 'q' to quit{RESET}\n")
+    sys.exit(1)
