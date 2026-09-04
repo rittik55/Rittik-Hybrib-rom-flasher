@@ -56,7 +56,7 @@ def execute_script(target_dir, script_name):
     os.system(f"sed -i -e 's/\\r$//' '{file_path}' 2>/dev/null")
     os.system(f"chmod +x '{file_path}'")
 
-    # Fix x86 fastboot binary with Termux arm fastboot if exists
+    # Fix x86 PC fastboot with system fastboot if needed
     bin_linux_dir = os.path.join(target_dir, "bin", "linux")
     if os.path.exists(bin_linux_dir):
         system_fastboot = subprocess.getoutput("which fastboot").strip()
@@ -68,24 +68,55 @@ def execute_script(target_dir, script_name):
     print("\nEnsure target phone is connected in Fastboot mode...\n")
     check_mode()
 
-    print(f"\n\033[92mExecuting {script_name} from {target_dir}...\033[0m\n")
+    print(f"\n\033[92mExecuting {script_name}...\033[0m\n")
     os.system(f"cd '{target_dir}' && env PATH=\"$PREFIX/bin:$PATH\" bash '{script_name}'")
     exit()
 
-def find_best_rom_directory():
-    # 1. First priority: Default extracted folder
-    default_dir = "/sdcard/Download/hybrid-fastboot-rom"
-    if os.path.isdir(default_dir):
-        return default_dir
+def show_flashing_scripts_menu(rom_dir):
+    ignored_keywords = ["module", "ksun", "magisk", "susfs", "kernel"]
 
-    # 2. Look for any directory having images/ folder or .img files
+    # 1. Collect all scripts inside the ROM folder
+    inside_scripts = [
+        f for f in os.listdir(rom_dir) 
+        if f.endswith(".sh") and "lock" not in f.lower()
+    ]
+
+    # 2. Search for any external standalone scripts outside the ROM folder (e.g. in /sdcard/Download)
+    external_scripts = {}
     for root, dirs, files in os.walk("/sdcard"):
-        if "/Android" in root or "/." in root:
+        if "/Android" in root or "/." in root or os.path.abspath(root).startswith(os.path.abspath(rom_dir)):
             continue
-        if "images" in dirs or any(f.endswith(".img") for f in files):
-            return root
+        if any(kw in root.lower() for kw in ignored_keywords):
+            continue
 
-    return None
+        for f in files:
+            if f.endswith(".sh") and "lock" not in f.lower():
+                external_scripts[f] = os.path.join(root, f)
+
+    # Copy external scripts into the ROM folder so they can flash images
+    for script_name, ext_path in external_scripts.items():
+        dest = os.path.join(rom_dir, script_name)
+        if not os.path.exists(dest):
+            shutil.copy2(ext_path, dest)
+        if script_name not in inside_scripts:
+            inside_scripts.append(script_name)
+
+    inside_scripts.sort()
+
+    if not inside_scripts:
+        print("\n\033[91mNo flashing scripts (.sh) found!\033[0m\n")
+        exit()
+
+    print("\n\033[93m--- Available Flashing Scripts (.sh) ---\033[0m")
+    for index, file in enumerate(inside_scripts, start=1):
+        print(f" \033[92m{index}\033[0m - {translate_file_name(file)}")
+
+    while True:
+        choice = input("\nEnter your \033[92mchoice\033[0m: ").strip()
+        if choice.isdigit() and 1 <= int(choice) <= len(inside_scripts):
+            execute_script(rom_dir, inside_scripts[int(choice) - 1])
+        else:
+            print("\nInvalid choice! Please select a valid number.")
 
 def decompress_and_flash_rom(archive_file):
     RF = "/sdcard/Download/hybrid-fastboot-rom"
@@ -110,77 +141,47 @@ def decompress_and_flash_rom(archive_file):
         exit()
 
     print("\n\033[92m✔ Decompression completed successfully!\033[0m\n")
-    
-    # Check scripts inside extracted folder
-    all_files = os.listdir(RF)
-    sh_files = [f for f in all_files if f.endswith(".sh") and "lock" not in f.lower()]
-    if sh_files:
-        sh_files.sort()
-        print("\n\033[93m--- Available Flashing Scripts (.sh) ---\033[0m")
-        for idx, f in enumerate(sh_files, start=1):
-            print(f" \033[92m{idx}\033[0m - {translate_file_name(f)}")
-        
-        while True:
-            try:
-                ch = int(input("\nEnter your \033[92mchoice\033[0m: "))
-                if 1 <= ch <= len(sh_files):
-                    execute_script(RF, sh_files[ch - 1])
-                print("\nInvalid choice!")
-            except ValueError:
-                print("\nInvalid input!")
-    else:
-        print("\n\033[91mNo .sh scripts found inside extracted folder!\033[0m\n")
-        exit()
+    show_flashing_scripts_menu(RF)
 
 # ----------------- Main Scan & Selector -----------------
 
 valid_extensions = (".tgz", ".tar.gz", ".zip", ".7z", ".rar")
 ignored_keywords = ["module", "ksun", "magisk", "susfs", "kernel"]
 
-items_list = []
+main_items = []
 
-print("\n\033[93mScanning storage for ROM archives and .sh scripts...\033[0m")
+print("\n\033[93mScanning storage for ROM archives and folders...\033[0m")
 
+# 1. Scan ONLY for ROM archives (No .sh scripts in main menu)
 for root, dirs, files in os.walk("/sdcard"):
     if "/Android" in root or "/." in root:
         continue
-
     if any(kw in root.lower() for kw in ignored_keywords):
         continue
 
     for f in files:
         f_lower = f.lower()
-
-        # 1. ROM Archives
         if f_lower.endswith(valid_extensions):
             if not any(kw in f_lower for kw in ignored_keywords):
-                full_path = os.path.join(root, f)
-                items_list.append({"name": f, "path": full_path, "type": "archive"})
+                main_items.append({"name": f, "path": os.path.join(root, f), "type": "archive"})
 
-        # 2. Standalone .sh scripts found anywhere
-        elif f_lower.endswith(".sh") and "lock" not in f_lower:
-            full_path = os.path.join(root, f)
-            items_list.append({"name": f, "path": full_path, "type": "script"})
-
-# Also show extracted ROM folder if it exists
+# 2. Add extracted ROM folder if it exists
 RF_DIR = "/sdcard/Download/hybrid-fastboot-rom"
-if os.path.isdir(RF_DIR) and any(f.endswith(".sh") for f in os.listdir(RF_DIR)):
-    items_list.append({"name": "hybrid-fastboot-rom", "path": RF_DIR, "type": "folder"})
+if os.path.isdir(RF_DIR):
+    main_items.append({"name": "hybrid-fastboot-rom", "path": RF_DIR, "type": "folder"})
 
-if items_list:
+if main_items:
     # Deduplicate
     seen = set()
     unique_items = []
-    for item in items_list:
+    for item in main_items:
         if item["path"] not in seen:
             seen.add(item["path"])
             unique_items.append(item)
 
-    print(f"\nFound {len(unique_items)} Item(s):")
+    print(f"\nFound {len(unique_items)} ROM item(s):")
     for i, item in enumerate(unique_items, start=1):
-        if item["type"] == "script":
-            print(f" \033[92m{i}\033[0m - [Custom Script] {item['name']}  \033[90m({item['path']})\033[0m")
-        elif item["type"] == "archive":
+        if item["type"] == "archive":
             print(f" \033[92m{i}\033[0m - [ROM Archive] {item['name']}")
         else:
             print(f" \033[92m{i}\033[0m - [Extracted ROM Folder] {item['path']}")
@@ -196,45 +197,11 @@ if items_list:
 
     selected = unique_items[choice - 1]
 
-    # Action 1: ROM Archive selected -> Decompress & Flash
     if selected["type"] == "archive":
         decompress_and_flash_rom(selected["path"])
-
-    # Action 2: Standalone .sh script selected
-    elif selected["type"] == "script":
-        script_full_path = selected["path"]
-        script_name = selected["name"]
-        rom_dir = find_best_rom_directory()
-
-        if rom_dir:
-            # If the script is outside the ROM folder, copy it inside
-            if os.path.abspath(os.path.dirname(script_full_path)) != os.path.abspath(rom_dir):
-                target_script = os.path.join(rom_dir, script_name)
-                shutil.copy2(script_full_path, target_script)
-                print(f"\n\033[92mCopied {script_name} to ROM directory: {rom_dir}\033[0m")
-            execute_script(rom_dir, script_name)
-        else:
-            # If no ROM folder detected, execute from its current location
-            execute_script(os.path.dirname(script_full_path), script_name)
-
-    # Action 3: Already extracted ROM folder selected
     elif selected["type"] == "folder":
-        all_files = os.listdir(selected["path"])
-        sh_files = [f for f in all_files if f.endswith(".sh") and "lock" not in f.lower()]
-        sh_files.sort()
-        print("\n\033[93m--- Available Flashing Scripts (.sh) ---\033[0m")
-        for idx, f in enumerate(sh_files, start=1):
-            print(f" \033[92m{idx}\033[0m - {translate_file_name(f)}")
-        
-        while True:
-            try:
-                ch = int(input("\nEnter your \033[92mchoice\033[0m: "))
-                if 1 <= ch <= len(sh_files):
-                    execute_script(selected["path"], sh_files[ch - 1])
-                print("\nInvalid choice!")
-            except ValueError:
-                print("\nInvalid input!")
+        show_flashing_scripts_menu(selected["path"])
 
 else:
-    print("\n\033[91mNo ROM archives or .sh scripts found in storage!\033[0m\n")
+    print("\n\033[91mNo ROM archives or extracted ROM folders found in storage!\033[0m\n")
     
