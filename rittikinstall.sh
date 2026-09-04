@@ -89,6 +89,6 @@ run_step "download miasst_termux" \
 && chmod +x $PREFIX/bin/miasst_termux"
 
 echo -e "${G}✔ Installation completed successfully${N}\n"
-echo -e "Run command: ${G}ritiktool${N}"
+echo -e "Run command: ${G}rittiktool${N}"
 echo ""
 
