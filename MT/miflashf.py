@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/python
 
 import os
 import sys
@@ -6,20 +6,7 @@ import time
 import shutil
 import subprocess
 
-VERSION = "7.1.0-PRO"
-
-# Terminal Color Palette
-ORANGE = "\033[38;5;208m"
-GREEN  = "\033[38;5;48m"
-RED    = "\033[38;5;196m"
-YELLOW = "\033[38;5;220m"
-GRAY   = "\033[38;5;242m"
-BOLD   = "\033[1m"
-RESET  = "\033[0m"
-
-# ==========================================================
-# 100% ORIGINAL EMBEDDED SCRIPTS (UNTOUCHED)
-# ==========================================================
+# --- 100% Offline Embedded Custom Scripts ---
 RITTIK_XPOWER_CODE = r"""#!/data/data/com.termux/files/usr/bin/sh
 # ==========================================================
 # Flash Script for Fastboot ROM (Duchamp)
@@ -232,108 +219,58 @@ $fastboot oem cdms
 $fastboot reboot
 """
 
-def write_custom_scripts(target_dir):
-    script1 = os.path.join(target_dir, "Rittik_xpower.sh")
-    script2 = os.path.join(target_dir, "ritik_flash_.sh")
+def write_matching_script(target_dir):
+    # img फ़ोल्डर होने पर सिर्फ Rittik_xpower.sh बनाएगा
+    if os.path.isdir(os.path.join(target_dir, "img")):
+        script_path = os.path.join(target_dir, "Rittik_xpower.sh")
+        with open(script_path, "w", encoding="utf-8") as f:
+            f.write(RITTIK_XPOWER_CODE)
+        os.system(f"chmod +x '{script_path}'")
 
-    with open(script1, "w", encoding="utf-8") as f:
-        f.write(RITTIK_XPOWER_CODE)
+    # images फ़ोल्डर होने पर सिर्फ ritik_flash_.sh बनाएगा
+    elif os.path.isdir(os.path.join(target_dir, "images")):
+        script_path = os.path.join(target_dir, "ritik_flash_.sh")
+        with open(script_path, "w", encoding="utf-8") as f:
+            f.write(RITIK_FLASH_CODE)
+        os.system(f"chmod +x '{script_path}'")
 
-    with open(script2, "w", encoding="utf-8") as f:
-        f.write(RITIK_FLASH_CODE)
-
-    os.system(f"chmod +x '{script1}' '{script2}'")
-
-def wait_for_fastboot():
-    spinner = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
-    idx = 0
-    was_disconnected = False
-
+def check_mode():
+    spinner = "|/-\\"
+    message = "\r Device not connected in Fastboot! "
     while True:
-        try:
-            output = subprocess.check_output(
-                ['fastboot', 'devices'], 
-                stderr=subprocess.STDOUT
-            ).decode('utf-8', errors='ignore').strip()
-        except Exception:
-            output = ""
+        for char in spinner:
+            try:
+                output = subprocess.check_output(
+                    ['fastboot', 'devices'], 
+                    stderr=subprocess.STDOUT
+                ).decode('utf-8', errors='ignore').strip()
+            except Exception:
+                output = ""
 
-        if output and "fastboot" in output.lower():
-            if "no permission" not in output.lower():
-                sys.stdout.write('\r' + ' ' * 65 + '\r')
-                if was_disconnected:
-                    print(f" {GREEN}✔ Connection Restored! Proceeding...{RESET}\n")
-                else:
-                    print(f" {GREEN}✔ Device Connected in Fastboot Mode!{RESET}\n")
+            if output and "fastboot" in output.lower():
+                if "no permission" in output.lower():
+                    sys.stdout.write(message + char + '\r')
+                    sys.stdout.flush()
+                    time.sleep(0.2)
+                    continue
+
+                sys.stdout.write('\r\033[K')
+                sys.stdout.flush()
+                print("\n\033[92mDevice connected in Fastboot mode!\033[0m\n")
                 return
+            else:
+                sys.stdout.write(message + char + '\r')
+                sys.stdout.flush()
+                time.sleep(0.2)
 
-        was_disconnected = True
-        char = spinner[idx % len(spinner)]
-        sys.stdout.write(f"\r {YELLOW}{char}{RESET} {BOLD}Device not detected! Connect phone via OTG in Fastboot...{RESET}")
-        sys.stdout.flush()
-        idx += 1
-        time.sleep(0.08)
-
-def decompress_and_flash_rom(archive_file):
-    RF = "/sdcard/Download/hybrid-fastboot-rom"
-    
-    if os.path.exists(RF):
-        print(f"\n {GRAY}Clearing old extracted ROM cache...{RESET}")
-        shutil.rmtree(RF, ignore_errors=True)
-
-    os.makedirs(RF, exist_ok=True)
-
-    print(f"\n {ORANGE}► Decompressing ROM Archive...{RESET}\n")
-    archive_lower = archive_file.lower()
-
-    if archive_lower.endswith((".tgz", ".tar.gz")):
-        file_size = os.path.getsize(archive_file)
-        if shutil.which("pv"):
-            cmd = f"pv -s {file_size} '{archive_file}' | tar --strip-components=1 -xz -C '{RF}/' > /dev/null 2>&1"
-        else:
-            cmd = f"tar --strip-components=1 -xf '{archive_file}' -C '{RF}/'"
-    elif archive_lower.endswith((".zip", ".7z", ".rar")):
-        # -bso0 cuts headers, -bsp1 keeps live %, -bse0 cuts error junk
-        cmd = f"7z x -y '{archive_file}' -o'{RF}/' -bso0 -bsp1 -bse0"
+def format_script_name(file_name):
+    name_lower = file_name.lower()
+    if name_lower == "flash_all_lock.sh":
+        return "Flash all \033[91mwith lock bootloader\033[0m"
+    elif name_lower == "flash_all.sh":
+        return "\033[92mFlash all without locking bootloader\033[0m"
     else:
-        print(f" {RED}Unsupported format!{RESET}")
-        sys.exit(1)
-
-    return_code = os.system(cmd)
-    if return_code != 0:
-        print(f"\n {RED}✖ Decompression failed (Exit Code: {return_code}){RESET}\n")
-        sys.exit(1)
-
-    print(f"\n {GREEN}✔ Decompression completed successfully!{RESET}\n")
-    auto_detect_and_flash(RF)
-
-def auto_detect_and_flash(rom_dir):
-    has_stock_script = os.path.exists(f"{rom_dir}/flash_all.sh") or os.path.exists(f"{rom_dir}/flash_all_lock.sh")
-    if not has_stock_script:
-        write_custom_scripts(rom_dir)
-
-    print(f" {BOLD}Scanning ROM Directory Structure...{RESET}")
-    selected_script = None
-
-    if os.path.exists(f"{rom_dir}/flash_all.sh"):
-        selected_script = "flash_all.sh"
-        print(f" {CYAN}↳ Official Stock Firmware Detected{RESET}")
-    elif os.path.isdir(f"{rom_dir}/img"):
-        selected_script = "Rittik_xpower.sh"
-        print(f" {CYAN}↳ 'img/' folder found -> Selected: Rittik_xpower.sh{RESET}")
-    elif os.path.isdir(f"{rom_dir}/images"):
-        selected_script = "ritik_flash_.sh"
-        print(f" {CYAN}↳ 'images/' folder found -> Selected: ritik_flash_.sh{RESET}")
-    elif os.path.exists(f"{rom_dir}/Rittik_xpower.sh"):
-        selected_script = "Rittik_xpower.sh"
-    elif os.path.exists(f"{rom_dir}/ritik_flash_.sh"):
-        selected_script = "ritik_flash_.sh"
-
-    if not selected_script:
-        print(f"\n {RED}✖ Could not determine script automatically.{RESET}")
-        sys.exit(1)
-
-    execute_script(rom_dir, selected_script)
+        return file_name
 
 def execute_script(target_dir, script_name):
     file_path = os.path.join(target_dir, script_name)
@@ -348,73 +285,131 @@ def execute_script(target_dir, script_name):
             os.system(f"rm -f '{target_bin}'")
             os.system(f"ln -sf '{system_fastboot}' '{target_bin}'")
 
-    wait_for_fastboot()
+    print("\nEnsure target phone is connected in Fastboot mode...\n")
+    check_mode()
 
-    print(f" {GREEN}▶ Auto-Launching: {BOLD}{script_name}{RESET}...\n")
+    print(f"\n\033[92mExecuting {script_name}...\033[0m\n")
     os.system(f"cd '{target_dir}' && env PATH=\"$PREFIX/bin:$PATH\" bash '{script_name}'")
-    sys.exit(0)
+    exit()
 
-def scan_rom_packages():
-    valid_extensions = (".tgz", ".tar.gz", ".zip", ".7z", ".rar")
-    ignored_keywords = ["module", "ksun", "magisk", "susfs", "kernel"]
+def show_flashing_scripts_menu(rom_dir):
+    allowed_scripts = [
+        "Rittik_xpower.sh", 
+        "ritik_flash_.sh", 
+        "flash_all.sh", 
+        "flash_all_lock.sh"
+    ]
 
-    target_locations = ["/sdcard/Download", "/sdcard"]
-    found_items = []
+    inside_scripts = [
+        f for f in os.listdir(rom_dir) 
+        if f in allowed_scripts
+    ]
 
-    for folder in target_locations:
-        if not os.path.exists(folder):
-            continue
-        try:
-            for item in os.listdir(folder):
-                full_path = os.path.join(folder, item)
-                if os.path.isfile(full_path) and item.lower().endswith(valid_extensions):
-                    if not any(kw in item.lower() for kw in ignored_keywords):
-                        found_items.append({"path": full_path, "type": "archive"})
-        except PermissionError:
-            pass
+    inside_scripts.sort()
 
-    RF_DIR = "/sdcard/Download/hybrid-fastboot-rom"
-    if os.path.isdir(RF_DIR):
-        found_items.append({"path": RF_DIR, "type": "folder"})
+    if not inside_scripts:
+        print("\n\033[91mNo valid flashing scripts found!\033[0m\n")
+        exit()
 
-    return found_items
-
-def main():
-    os.system('clear' if os.name == 'posix' else 'cls')
-    
-    print(f"{ORANGE}{BOLD}")
-    print("  ┌──────────────────────────────────────────────┐")
-    print("  │         R I T I K   F L A S H E R            │")
-    print(f"  │      {RESET}{GRAY}HYBRID ENGINE v{VERSION}  │  POCO X6 PRO{RESET}{ORANGE}{BOLD}      │")
-    print("  └──────────────────────────────────────────────┘" + RESET)
-
-    items = scan_rom_packages()
-
-    if not items:
-        print(f"\n {RED}✖ No ROM packages found in /sdcard/Download!{RESET}\n")
-        sys.exit(1)
-
-    print(f"\n {BOLD}Detected ROM Packages in Storage:{RESET}")
-    print(f" {GRAY}{'─' * 45}{RESET}")
-    for i, item in enumerate(items, start=1):
-        name = os.path.basename(item["path"])
-        if item["type"] == "folder":
-            name += f" {YELLOW}[Extracted Folder]{RESET}"
-        print(f"  {ORANGE}{BOLD}[{i}]{RESET} {name}")
-    print(f" {GRAY}{'─' * 45}{RESET}")
+    print("\n\033[93m--- Available Flashing Scripts (.sh) ---\033[0m")
+    for index, file in enumerate(inside_scripts, start=1):
+        print(f" \033[92m{index}\033[0m - {format_script_name(file)}")
 
     while True:
-        choice = input(f"\n {BOLD}Select ROM index [1-{len(items)}]: {RESET}").strip()
-        if choice.isdigit() and 1 <= int(choice) <= len(items):
-            selected = items[int(choice) - 1]
-            break
-        print(f" {RED}Invalid choice!{RESET}")
+        choice = input("\nEnter your \033[92mchoice\033[0m: ").strip()
+        if choice.isdigit() and 1 <= int(choice) <= len(inside_scripts):
+            execute_script(rom_dir, inside_scripts[int(choice) - 1])
+        else:
+            print("\nInvalid choice! Please select a valid number.")
+
+def decompress_and_flash_rom(archive_file):
+    RF = "/sdcard/Download/hybrid-fastboot-rom"
+    
+    if os.path.exists(RF):
+        print("\n\033[93mRemoving previous extracted ROM files...\033[0m")
+        shutil.rmtree(RF, ignore_errors=True)
+
+    os.makedirs(RF, exist_ok=True)
+
+    print("\ndecompressed..., please wait\n")
+    archive_lower = archive_file.lower()
+
+    if archive_lower.endswith((".tgz", ".tar.gz")):
+        file_size = os.path.getsize(archive_file)
+        cmd = f"pv -s {file_size} '{archive_file}' | tar --strip-components=1 -xz -C '{RF}/' > /dev/null 2>&1"
+    elif archive_lower.endswith((".zip", ".7z", ".rar")):
+        cmd = f"7z x -y '{archive_file}' -o'{RF}/' -bsp1 -bso0 -bse0"
+    else:
+        print("\nUnsupported format!\n")
+        exit()
+
+    return_code = os.system(cmd)
+    if return_code != 0:
+        print(f"\n\033[91mError during extraction (Exit Code: {return_code})\033[0m\n")
+        exit()
+
+    print("\n\033[92m✔ Decompression completed successfully!\033[0m\n")
+
+    has_stock_script = os.path.exists(f"{RF}/flash_all.sh") or os.path.exists(f"{RF}/flash_all_lock.sh")
+
+    if not has_stock_script:
+        # यहाँ फ़ोल्डर के हिसाब से सटीक स्क्रिप्ट लिखी जाएगी
+        write_matching_script(RF)
+
+    show_flashing_scripts_menu(RF)
+
+# ----------------- Main Scan & Selector -----------------
+
+valid_extensions = (".tgz", ".tar.gz", ".zip", ".7z", ".rar")
+ignored_keywords = ["module", "ksun", "magisk", "susfs", "kernel"]
+
+main_items = []
+
+print("\n\033[93mScanning storage for ROM archives and folders...\033[0m")
+
+for root, dirs, files in os.walk("/sdcard"):
+    if "/Android" in root or "/." in root:
+        continue
+    if any(kw in root.lower() for kw in ignored_keywords):
+        continue
+
+    for f in files:
+        f_lower = f.lower()
+        if f_lower.endswith(valid_extensions):
+            if not any(kw in f_lower for kw in ignored_keywords):
+                main_items.append({"path": os.path.join(root, f), "type": "archive"})
+
+RF_DIR = "/sdcard/Download/hybrid-fastboot-rom"
+if os.path.isdir(RF_DIR):
+    main_items.append({"path": RF_DIR, "type": "folder"})
+
+if main_items:
+    seen = set()
+    unique_items = []
+    for item in main_items:
+        if item["path"] not in seen:
+            seen.add(item["path"])
+            unique_items.append(item)
+
+    print(f"\nFound {len(unique_items)} ROM item(s):")
+    for i, item in enumerate(unique_items, start=1):
+        print(f" \033[92m{i}\033[0m - {item['path']}")
+
+    while True:
+        try:
+            choice = int(input("\nEnter your \033[92mchoice\033[0m: "))
+            if 1 <= choice <= len(unique_items):
+                break
+            print("\nInvalid choice!")
+        except ValueError:
+            print("\nInvalid input!")
+
+    selected = unique_items[choice - 1]
 
     if selected["type"] == "archive":
         decompress_and_flash_rom(selected["path"])
     elif selected["type"] == "folder":
-        auto_detect_and_flash(selected["path"])
+        show_flashing_scripts_menu(selected["path"])
 
-if __name__ == "__main__":
-    main()
-    
+else:
+    print("\n\033[91mNo ROM archives or folders found in storage!\033[0m\n")
