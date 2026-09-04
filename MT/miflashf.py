@@ -35,20 +35,6 @@ def check_mode():
                 sys.stdout.flush()
                 time.sleep(0.2)
 
-def translate_file_name(file_name):
-    name_lower = file_name.lower()
-    
-    if "first_install" in name_lower or "format" in name_lower or "clean" in name_lower or "xpower" in name_lower:
-        return f"{file_name} (\033[91mClean Flash - Wipes Data\033[0m)"
-    elif "update" in name_lower or "dirty" in name_lower:
-        return f"{file_name} (\033[92mDirty Flash - Keeps Data\033[0m)"
-    elif "flash_all_except" in name_lower:
-        return f"{file_name} (\033[92mFlash All - Keeps Data\033[0m)"
-    elif "flash_all" in name_lower or name_lower in ["flash.sh", "install.sh"]:
-        return f"{file_name} (\033[92mFull Flash / Clean Flash\033[0m)"
-    else:
-        return f"\033[93m{file_name}\033[0m (Custom Script)"
-
 def execute_script(target_dir, script_name):
     file_path = os.path.join(target_dir, script_name)
     os.system(f"sed -i -e 's/\\r$//' '{file_path}' 2>/dev/null")
@@ -70,7 +56,6 @@ def execute_script(target_dir, script_name):
     exit()
 
 def show_flashing_scripts_menu(rom_dir):
-    # सिर्फ आपकी दोनों स्क्रिप्ट्स ही लिस्ट में आएँगी
     allowed_scripts = ["Rittik_xpower.sh", "ritik_flash_.sh"]
 
     inside_scripts = [
@@ -86,7 +71,7 @@ def show_flashing_scripts_menu(rom_dir):
 
     print("\n\033[93m--- Available Flashing Scripts (.sh) ---\033[0m")
     for index, file in enumerate(inside_scripts, start=1):
-        print(f" \033[92m{index}\033[0m - {translate_file_name(file)}")
+        print(f" \033[92m{index}\033[0m - {file}")
 
     while True:
         choice = input("\nEnter your \033[92mchoice\033[0m: ").strip()
