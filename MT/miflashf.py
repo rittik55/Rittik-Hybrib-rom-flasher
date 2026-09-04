@@ -113,18 +113,13 @@ def decompress_and_flash_rom(archive_file):
 
     print(f"\n\033[92mDecompressing ROM archive, please wait...\033[0m\n")
     
-    file_size = os.path.getsize(archive_file)
     archive_lower = archive_file.lower()
 
-    # pv format: Processed Data / Total, Percentage, Speed, Elapsed Time, ETA
-    pv_cmd = f"pv -s {file_size} -p -t -e -r -b"
-
     if archive_lower.endswith((".tgz", ".tar.gz")):
-        cmd = f"{pv_cmd} '{archive_file}' | tar --strip-components=1 -xz -C '{RF}/' > /dev/null 2>&1"
-    elif archive_lower.endswith((".zip", ".7z")):
-        cmd = f"{pv_cmd} '{archive_file}' | 7z x -si -y -o'{RF}/' -bso0 -bse0 > /dev/null 2>&1"
-    elif archive_lower.endswith(".rar"):
-        cmd = f"{pv_cmd} '{archive_file}' | 7z x -si -y -o'{RF}/' -bso0 -bse0 > /dev/null 2>&1"
+        file_size = os.path.getsize(archive_file)
+        cmd = f"pv -s {file_size} -p -t -e -r -b '{archive_file}' | tar --strip-components=1 -xz -C '{RF}/' > /dev/null 2>&1"
+    elif archive_lower.endswith((".zip", ".7z", ".rar")):
+        cmd = f"7z x -y '{archive_file}' -o'{RF}/' -bsp1 -bso0 -bse0"
     else:
         print("\nUnsupported format!\n")
         exit()
