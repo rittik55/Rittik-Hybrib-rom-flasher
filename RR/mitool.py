@@ -4,7 +4,7 @@ import subprocess
 import sys
 import os
 
-version = "1.5.9"
+version = "2.0.0"
 
 ORANGE = "\033[38;5;208m"
 DIM = "\033[2m"
@@ -13,11 +13,11 @@ RED = "\033[1;31m"
 GREEN = "\033[1;32m"
 RESET = "\033[0m"
 
+# Bootloader Unlock option completely removed
 TOOLS = {
-    "1": ("Unlock Bootloader", "$PREFIX/bin/miunlock"),
-    "2": ("Flash Fastboot ROM", "$PREFIX/bin/miflashf"),
-    "3": ("Mi Assistant", "$PREFIX/bin/miasst"),
-    "4": ("Firmware Content Extractor", "$PREFIX/bin/mifcetool")
+    "1": ("Flash Fastboot ROM", "$PREFIX/bin/miflashf"),
+    "2": ("Mi Assistant", "$PREFIX/bin/miasst"),
+    "3": ("Firmware Content Extractor", "$PREFIX/bin/mifcetool")
 }
 
 try:
@@ -30,8 +30,6 @@ def get_center(text):
     pad = max(0, (term_width - len(clean)) // 2)
     return ' ' * pad + text
 
-separator = f"{DIM}{'━' * min(term_width, 70)}{RESET}"
-
 print("\n")
 print(get_center(f"{DIM}{'═' * min(term_width, 70)}{RESET}"))
 
@@ -42,7 +40,7 @@ print(get_center(f"┃  {ORANGE}{BOLD}Rittik Tool ROM Flasher{RESET} {DIM}v{vers
 print(get_center(f"┗{'━' * (box_width - 2)}┛"))
 
 print(get_center(f"{BOLD}Developed by Rittik{RESET}"))
-print(get_center(f"{DIM}github.com/rittik55/MiTool{RESET}"))
+print(get_center(f"{DIM}github.com/rittik55/Rittik-Hybrib-rom-flasher{RESET}"))
 print(get_center(f"{DIM}{'═' * min(term_width, 70)}{RESET}"))
 print()
 
@@ -72,6 +70,5 @@ if choice in TOOLS:
     subprocess.run(cmd, shell=True)
 else:
     print(f"{RED}✗ Invalid:{RESET} '{choice}'")
-    print(f"{DIM}Select 1-4 or 'q' to quit{RESET}\n")
+    print(f"{DIM}Select 1-3 or 'q' to quit{RESET}\n")
     sys.exit(1)
-
