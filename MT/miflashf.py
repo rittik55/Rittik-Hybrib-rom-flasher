@@ -113,10 +113,15 @@ def decompress_and_flash_rom(archive_file):
 
     print(f"\n\033[92mExtracting ROM archive, please wait...\033[0m\n")
     
-    if archive_file.endswith((".tgz", ".tar.gz")):
+    archive_lower = archive_file.lower()
+    if archive_lower.endswith((".tgz", ".tar.gz")):
         cmd = f"pv -bpe '{archive_file}' | tar --strip-components=1 -xzf- -C '{RF}/'"
-    elif archive_file.endswith(".zip"):
+    elif archive_lower.endswith(".zip"):
         cmd = f"unzip -o '{archive_file}' -d '{RF}/'"
+    elif archive_lower.endswith(".7z"):
+        cmd = f"7z x -y '{archive_file}' -o'{RF}/'"
+    elif archive_lower.endswith(".rar"):
+        cmd = f"unrar x -o+ '{archive_file}' '{RF}/'"
     else:
         print("\nUnsupported format!\n")
         exit()
@@ -130,7 +135,7 @@ def decompress_and_flash_rom(archive_file):
 
 # ----------------- Main Scan & Selector -----------------
 
-valid_extensions = (".tgz", ".tar.gz", ".zip")
+valid_extensions = (".tgz", ".tar.gz", ".zip", ".7z", ".rar")
 result_paths = []
 
 print("\n\033[93mScanning storage for ROM archives and folders...\033[0m")
@@ -138,9 +143,9 @@ for root, dirs, files in os.walk("/sdcard"):
     if "Android" in root:
         continue
 
-    # Find archives
+    # Find archives (.zip, .tgz, .7z, .rar)
     for f in files:
-        if f.endswith(valid_extensions):
+        if f.lower().endswith(valid_extensions):
             result_paths.append(os.path.join(root, f))
 
     # Find folders containing any .sh script
@@ -172,10 +177,10 @@ if result_paths:
 
     selected_result = result_paths[selected_index - 1]
 
-    if any(selected_result.endswith(ext) for ext in valid_extensions):
+    if any(selected_result.lower().endswith(ext) for ext in valid_extensions):
         decompress_and_flash_rom(selected_result)
     elif os.path.isdir(selected_result):
         flash_selected_result(selected_result)
 
 else:
-    print("\n\033[91mNo ROM files (.zip, .tgz) or unzipped folders found in /sdcard!\033[0m\n")
+    print("\n\033[91mNo ROM files (.zip, .tgz, .7z, .rar) or unzipped folders found in /sdcard!\033[0m\n")
