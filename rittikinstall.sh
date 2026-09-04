@@ -83,12 +83,10 @@ run_step "download miasst.py" \
 "curl -fsS "${REPO_URL}/miasst.py" -o "$PREFIX/bin/miasst" && chmod +x "$PREFIX/bin/miasst""
 
 run_step "download miasst_termux" \
-"curl -fsS -L -o $PREFIX/bin/miasst_termux \
-"$(curl -fsS 'https://api.github.com/repos/MiForge/MiAssistantTool/releases/latest' \
-| grep 'browser_download_url.*miasst_termux_'${arch} | cut -d '"' -f 4)" \
-&& chmod +x $PREFIX/bin/miasst_termux"
+"curl -fsS -L "https://github.com/MiForge/MiAssistantTool/releases/latest/download/miasst_termux_${arch}" -o "$PREFIX/bin/miasst_termux" && chmod +x "$PREFIX/bin/miasst_termux" || true"
+
+ln -sf "$PREFIX/bin/rittiktool" "$PREFIX/bin/ritiktool"
 
 echo -e "${G}✔ Installation completed successfully${N}\n"
-echo -e "Run command: ${G}rittiktool${N}"
+echo -e "Run command: ${G}rittiktool${N} (or ${G}rittiktool${N})"
 echo ""
-
