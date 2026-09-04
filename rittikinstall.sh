@@ -68,7 +68,7 @@ run_step "symlink termux-adb/termux-fastboot — adb/fastboot" \
 run_step "Installing colorama" \
 "pip install -U colorama"
 
-run_step "download ritiktool" \
+run_step "download mitool.py" \
 'curl -fsS "https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/MT/mitool.py" -o "$PREFIX/bin/ritiktool" && chmod +x "$PREFIX/bin/ritiktool"'
 
 run_step "download miflashf.py" \
