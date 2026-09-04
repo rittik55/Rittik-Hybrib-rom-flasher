@@ -32,7 +32,7 @@ fi
 arch=$(dpkg --print-architecture)
 
 if [[ "$arch" != "aarch64" && "$arch" != "arm" ]]; then
-    echo "RitikTool does not support architecture $arch"
+    echo "Architecture $arch is not supported"
     exit 1
 fi
 
@@ -45,8 +45,8 @@ run_step "Installing Python3" \
 run_step "Installing libusb" \
 "yes | pkg install libusb"
 
-run_step "Installing pv" \
-"yes | pkg install pv"
+run_step "Installing pv & sed" \
+"yes | pkg install pv sed"
 
 run_step "Installing Archive Tools (7z, rar, zip, tar)" \
 "yes | pkg install p7zip unrar unzip tar"
@@ -60,13 +60,25 @@ run_step "symlink termux-adb/termux-fastboot — adb/fastboot" \
 run_step "Installing colorama" \
 "pip install -U colorama"
 
+run_step "Installing fcetool" \
+"pip install -U fcetool"
+
+# MT फ़ोल्डर के बिल्कुल सही लिंक्स
 run_step "download mitool.py" \
-'curl -fsS "https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/mitool.py" -o "$PREFIX/bin/mitool" && chmod +x "$PREFIX/bin/mitool"'
+'curl -fsS "https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/MT/mitool.py" -o "$PREFIX/bin/mitool" && chmod +x "$PREFIX/bin/mitool"'
 
 run_step "download miflashf.py" \
-'curl -fsS "https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/miflashf.py" -o "$PREFIX/bin/miflashf" && chmod +x "$PREFIX/bin/miflashf"'
+'curl -fsS "https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/MT/miflashf.py" -o "$PREFIX/bin/miflashf" && chmod +x "$PREFIX/bin/miflashf"'
+
+run_step "download mifcetool.py" \
+'curl -fsS "https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/MT/mifcetool.py" -o "$PREFIX/bin/mifcetool" && chmod +x "$PREFIX/bin/mifcetool"'
+
+run_step "download miasst.py" \
+'curl -fsS "https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/MT/miasst.py" -o "$PREFIX/bin/miasst" && chmod +x "$PREFIX/bin/miasst"'
+
+run_step "download miasst_termux binary" \
+'curl -fsS -L -o "$PREFIX/bin/miasst_termux" "$(curl -fsS '\''https://api.github.com/repos/MiForge/MiAssistantTool/releases/latest'\'' | grep "browser_download_url.*miasst_termux_${arch}" | cut -d "\"" -f 4)" && chmod +x "$PREFIX/bin/miasst_termux"'
 
 echo -e "${G}✔ Installation completed successfully${N}\n"
-
 echo -e "Run command: ${G}mitool${N}"
 echo ""
