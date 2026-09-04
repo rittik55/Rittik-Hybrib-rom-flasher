@@ -88,5 +88,5 @@ run_step "download miasst_termux" \
 ln -sf "$PREFIX/bin/rittiktool" "$PREFIX/bin/ritiktool"
 
 echo -e "${G}✔ Installation completed successfully${N}\n"
-echo -e "Run command: ${G}rittiktool${N} (or ${G}rittiktool${N})"
+echo -e "Run command: ${G}rittiktool${N}
 echo ""
