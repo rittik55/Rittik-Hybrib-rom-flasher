@@ -53,8 +53,8 @@ run_step "Installing Python3" \
 run_step "Installing libusb" \
 "yes | pkg install libusb"
 
-run_step "Installing pv & sed" \
-"yes | pkg install pv sed"
+run_step "Installing pv" \
+"yes | pkg install pv"
 
 run_step "Installing Archive Tools (7z, rar, zip, tar)" \
 "yes | pkg install p7zip unrar unzip tar"
@@ -68,10 +68,13 @@ run_step "symlink termux-adb/termux-fastboot — adb/fastboot" \
 run_step "Installing colorama" \
 "pip install -U colorama"
 
-run_step "download ritikflasher.py" \
-"curl -fsS "https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/ritikflasher.py" -o "$PREFIX/bin/ritiktool" && chmod +x "$PREFIX/bin/ritiktool""
+run_step "download mitool.py" \
+"curl -fsS "https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/mitool.py" -o "$PREFIX/bin/mitool" && chmod +x "$PREFIX/bin/mitool""
+
+run_step "download miflashf.py" \
+"curl -fsS "https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/miflashf.py" -o "$PREFIX/bin/miflashf" && chmod +x "$PREFIX/bin/miflashf""
 
 echo -e "${G}✔ Installation completed successfully${N}\n"
 
-echo -e "Run command: ${G}ritiktool${N}"
+echo -e "Run command: ${G}mitool${N}"
 echo ""
