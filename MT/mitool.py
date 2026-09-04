@@ -13,11 +13,8 @@ RED = "\033[1;31m"
 GREEN = "\033[1;32m"
 RESET = "\033[0m"
 
-# Unlock Bootloader option removed and numbering re-ordered
 TOOLS = {
-    "1": ("Flash Fastboot ROM", "$PREFIX/bin/miflashf"),
-    "2": ("Mi Assistant", "$PREFIX/bin/miasst"),
-    "3": ("Firmware Content Extractor", "$PREFIX/bin/mifcetool")
+    "1": ("Flash Fastboot / Hybrid ROM", "$PREFIX/bin/miflashf")
 }
 
 try:
@@ -71,5 +68,5 @@ if choice in TOOLS:
     subprocess.run(cmd, shell=True)
 else:
     print(f"{RED}✗ Invalid:{RESET} '{choice}'")
-    print(f"{DIM}Select 1-3 or 'q' to quit{RESET}\n")
+    print(f"{DIM}Select 1 or 'q' to quit{RESET}\n")
     sys.exit(1)
