@@ -35,6 +35,15 @@ def check_mode():
                 sys.stdout.flush()
                 time.sleep(0.2)
 
+def format_script_name(file_name):
+    name_lower = file_name.lower()
+    if name_lower == "flash_all_lock.sh":
+        return "Flash all \033[91mwith lock bootloader\033[0m"
+    elif name_lower == "flash_all.sh":
+        return "\033[92mFlash all without locking bootloader\033[0m"
+    else:
+        return file_name
+
 def execute_script(target_dir, script_name):
     file_path = os.path.join(target_dir, script_name)
     os.system(f"sed -i -e 's/\\r$//' '{file_path}' 2>/dev/null")
@@ -56,7 +65,6 @@ def execute_script(target_dir, script_name):
     exit()
 
 def show_flashing_scripts_menu(rom_dir):
-    # आपकी दोनों स्क्रिप्ट्स + स्टॉक ROM की खास स्क्रिप्ट्स
     allowed_scripts = [
         "Rittik_xpower.sh", 
         "ritik_flash_.sh", 
@@ -77,7 +85,7 @@ def show_flashing_scripts_menu(rom_dir):
 
     print("\n\033[93m--- Available Flashing Scripts (.sh) ---\033[0m")
     for index, file in enumerate(inside_scripts, start=1):
-        print(f" \033[92m{index}\033[0m - {file}")
+        print(f" \033[92m{index}\033[0m - {format_script_name(file)}")
 
     while True:
         choice = input("\nEnter your \033[92mchoice\033[0m: ").strip()
@@ -90,19 +98,18 @@ def decompress_and_flash_rom(archive_file):
     RF = "/sdcard/Download/hybrid-fastboot-rom"
     
     if os.path.exists(RF):
-        print(f"\n\033[93mRemoving previous extracted ROM files...\033[0m")
         shutil.rmtree(RF, ignore_errors=True)
 
     os.makedirs(RF, exist_ok=True)
 
-    print(f"\n\033[92mDecompressing ROM archive, please wait...\033[0m\n")
+    print("\ndecompressed..., please wait\n")
     archive_lower = archive_file.lower()
+    file_size = os.path.getsize(archive_file)
 
     if archive_lower.endswith((".tgz", ".tar.gz")):
-        file_size = os.path.getsize(archive_file)
-        cmd = f"pv -s {file_size} -p -t -e -r -b '{archive_file}' | tar --strip-components=1 -xz -C '{RF}/' > /dev/null 2>&1"
+        cmd = f"pv -s {file_size} '{archive_file}' | tar --strip-components=1 -xz -C '{RF}/' > /dev/null 2>&1"
     elif archive_lower.endswith((".zip", ".7z", ".rar")):
-        cmd = f"7z x -y '{archive_file}' -o'{RF}/' -bsp1 -bso0 -bse0"
+        cmd = f"pv -s {file_size} '{archive_file}' | 7z x -si -so -y 2>/dev/null | 7z x -si -y -o'{RF}/' -bso0 -bsp0 2>/dev/null || 7z x -y '{archive_file}' -o'{RF}/' -bsp1 -bso0 -bse0"
     else:
         print("\nUnsupported format!\n")
         exit()
@@ -112,11 +119,13 @@ def decompress_and_flash_rom(archive_file):
         print(f"\n\033[91mError during extraction (Exit Code: {return_code})\033[0m\n")
         exit()
 
-    print("\n\033[92m✔ Decompression completed successfully!\033[0m\n")
+    print()
 
-    print("\033[93mAdding custom flasher scripts to ROM folder...\033[0m")
-    os.system(f"curl -fsS 'https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/Rittik_xpower.sh' -o '{RF}/Rittik_xpower.sh' > /dev/null 2>&1")
-    os.system(f"curl -fsS 'https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/ritik_flash_.sh' -o '{RF}/ritik_flash_.sh' > /dev/null 2>&1")
+    has_stock_script = os.path.exists(f"{RF}/flash_all.sh") or os.path.exists(f"{RF}/flash_all_lock.sh")
+
+    if not has_stock_script:
+        os.system(f"curl -fsS 'https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/Rittik_xpower.sh' -o '{RF}/Rittik_xpower.sh' > /dev/null 2>&1")
+        os.system(f"curl -fsS 'https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/ritik_flash_.sh' -o '{RF}/ritik_flash_.sh' > /dev/null 2>&1")
 
     show_flashing_scripts_menu(RF)
 
