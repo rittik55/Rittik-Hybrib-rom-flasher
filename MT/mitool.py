@@ -1,81 +1,72 @@
 #!/usr/bin/env python3
 
-import os
 import subprocess
 import sys
+import os
 
-VERSION = "5.3.0"
+version = "2.0.0"
 
 ORANGE = "\033[38;5;208m"
-GREEN  = "\033[38;5;48m"
-RED    = "\033[38;5;196m"
-GRAY   = "\033[38;5;242m"
-BOLD   = "\033[1m"
-RESET  = "\033[0m"
+DIM = "\033[2m"
+BOLD = "\033[1m"
+RED = "\033[1;31m"
+GREEN = "\033[1;32m"
+RESET = "\033[0m"
 
-MENU = {
-    "1": ("Flash Fastboot / Hybrid ROM", "$PREFIX/bin/miflashf"),
-    "2": ("Reboot to Bootloader / Fastboot", "fastboot reboot bootloader 2>/dev/null || adb reboot bootloader"),
-    "3": ("Reboot to System", "fastboot reboot 2>/dev/null || adb reboot"),
-    "4": ("Wipe Userdata (Factory Reset)", "fastboot -w"),
+TOOLS = {
+    "1": ("Flash Fastboot / Hybrid ROM", "$PREFIX/bin/miflashf")
 }
 
-def get_status():
+try:
+    term_width = os.get_terminal_size().columns
+except:
+    term_width = 80
+
+def get_center(text):
+    clean = text.replace(ORANGE, '').replace(RESET, '').replace(DIM, '').replace(BOLD, '')
+    pad = max(0, (term_width - len(clean)) // 2)
+    return ' ' * pad + text
+
+separator = f"{DIM}{'━' * min(term_width, 70)}{RESET}"
+
+print("\n")
+print(get_center(f"{DIM}{'═' * min(term_width, 70)}{RESET}"))
+
+title = f"RitikTool v{version}"
+box_width = len(title) + 4
+print(get_center(f"┏{'━' * (box_width - 2)}┓"))
+print(get_center(f"┃  {ORANGE}RitikTool{RESET} {DIM}v{version}{RESET}  ┃"))
+print(get_center(f"┗{'━' * (box_width - 2)}┛"))
+
+print(get_center(f"{DIM}Developed by Ritik{RESET}"))
+print(get_center(f"{DIM}{'═' * min(term_width, 70)}{RESET}"))
+print()
+
+print(f"{BOLD}Available Operations:{RESET}\n")
+for key, (desc, _) in TOOLS.items():
+    print(f"  {DIM}▸{RESET} [{ORANGE}{key}{RESET}] {desc}")
+print(f"\n  {DIM}▸{RESET} [{ORANGE}q{RESET}] Quit\n")
+
+if len(sys.argv) > 1:
+    choice = sys.argv[1].lower()
+    print(f"{ORANGE}►{RESET} Selected: {ORANGE}{choice}{RESET}\n")
+else:
     try:
-        fb = subprocess.run(["fastboot", "devices"], capture_output=True, text=True, timeout=0.6)
-        if fb.stdout.strip():
-            dev = fb.stdout.strip().split()[0][:8]
-            return f"{GREEN}● Fastboot [{dev}]{RESET}"
+        choice = input(f"{BOLD}►{RESET} Enter choice: ").strip().lower()
+    except (KeyboardInterrupt, EOFError):
+        print(f"\n\n{ORANGE}Cancelled{RESET}")
+        sys.exit(0)
 
-        adb = subprocess.run(["adb", "devices"], capture_output=True, text=True, timeout=0.6)
-        lines = [l for l in adb.stdout.strip().split('\n')[1:] if l.strip()]
-        if lines:
-            dev = lines[0].split()[0][:8]
-            return f"{GREEN}● ADB [{dev}]{RESET}"
-    except Exception:
-        pass
-    return f"{RED}○ Disconnected{RESET}"
+if choice in ['q', 'quit', 'exit']:
+    print(f"{ORANGE}Exiting...{RESET}\n")
+    sys.exit(0)
 
-def render_screen():
-    status = get_status()
-    print("\n" + f"{ORANGE}{BOLD}  RITIK TOOL{RESET} {GRAY}v{VERSION}{RESET}  │  {status}")
-    print(f"{GRAY}  {'─' * 42}{RESET}\n")
-
-    for key, (name, _) in MENU.items():
-        print(f"  {ORANGE}{BOLD}[{key}]{RESET}  {name}")
-
-    print(f"\n  {RED}{BOLD}[0]{RESET}  Exit")
-    print(f"{GRAY}  {'─' * 42}{RESET}\n")
-
-def execute(choice):
-    name, cmd = MENU[choice]
-    expanded_cmd = os.path.expandvars(cmd)
-
-    print(f"\n{GRAY}Running: {expanded_cmd}{RESET}\n")
-    try:
-        subprocess.run(expanded_cmd, shell=True)
-    except Exception as e:
-        print(f"{RED}Error:{RESET} {e}")
-    finally:
-        input(f"\n{GRAY}Press Enter to continue...{RESET}")
-
-def main():
-    while True:
-        os.system('clear' if os.name == 'posix' else 'cls')
-        render_screen()
-
-        try:
-            choice = input(f"  {BOLD}Select option:{RESET} ").strip()
-        except (KeyboardInterrupt, EOFError):
-            print("\n")
-            sys.exit(0)
-
-        if choice in ['0', 'q', 'exit']:
-            print(f"\n{GRAY}Exiting...{RESET}\n")
-            break
-        elif choice in MENU:
-            execute(choice)
-
-if __name__ == "__main__":
-    main()
-    
+if choice in TOOLS:
+    desc, cmd = TOOLS[choice]
+    print(f"\n{ORANGE}►{RESET} Executing: {DIM}{cmd}{RESET}\n")
+    print(f"{DIM}{'─' * min(term_width, 70)}{RESET}\n")
+    subprocess.run(cmd, shell=True)
+else:
+    print(f"{RED}✗ Invalid:{RESET} '{choice}'")
+    print(f"{DIM}Select 1 or 'q' to quit{RESET}\n")
+    sys.exit(1)
