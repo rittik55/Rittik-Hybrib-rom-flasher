@@ -7,7 +7,7 @@
 
 [![Version 1.6.0](https://img.shields.io/badge/Version-1.6.0-brightgreen)](#)
 
-[![Developer](https://img.shields.io/badge/Developer-Rittik-orange)](#)
+[![Developer](https://img.shields.io/badge/Developer-Ritik-orange)](#)
 
 </div>
 
