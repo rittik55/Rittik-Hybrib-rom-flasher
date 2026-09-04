@@ -6,8 +6,8 @@ import time
 import shutil
 import subprocess
 
-# --- 100% Offline Embedded Custom Scripts ---
-RITTIK_XPOWER_CODE = """#!/data/data/com.termux/files/usr/bin/sh
+# --- 100% Offline Embedded Custom Scripts (Raw Strings Added) ---
+RITTIK_XPOWER_CODE = r"""#!/data/data/com.termux/files/usr/bin/sh
 # ==========================================================
 # Flash Script for Fastboot ROM (Duchamp)
 # Made by: Ritik
@@ -133,7 +133,7 @@ echo "[+] ROM Flashing Successfully Completed!"
 echo "[+] Script executed by Ritik."
 """
 
-RITIK_FLASH_CODE = """#!/data/data/com.termux/files/usr/bin/sh
+RITIK_FLASH_CODE = r"""#!/data/data/com.termux/files/usr/bin/sh
 cd "$(dirname "$0")" || exit 1
 
 if command -v termux-fastboot >/dev/null 2>&1; then
@@ -409,3 +409,4 @@ if main_items:
 
 else:
     print("\n\033[91mNo ROM archives or folders found in storage!\033[0m\n")
+    
