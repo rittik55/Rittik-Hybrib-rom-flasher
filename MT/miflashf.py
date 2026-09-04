@@ -111,26 +111,30 @@ def decompress_and_flash_rom(archive_file):
     if not os.path.exists(RF):
         os.makedirs(RF)
 
-    print(f"\n\033[92mExtracting ROM archive, please wait...\033[0m\n")
+    print(f"\n\033[92mDecompressing ROM archive, please wait...\033[0m\n")
     
+    file_size = os.path.getsize(archive_file)
     archive_lower = archive_file.lower()
+
+    # pv format: Processed Data / Total, Percentage, Speed, Elapsed Time, ETA
+    pv_cmd = f"pv -s {file_size} -p -t -e -r -b"
+
     if archive_lower.endswith((".tgz", ".tar.gz")):
-        cmd = f"pv -bpe '{archive_file}' | tar --strip-components=1 -xzf- -C '{RF}/'"
-    elif archive_lower.endswith(".zip"):
-        cmd = f"unzip -o '{archive_file}' -d '{RF}/'"
-    elif archive_lower.endswith(".7z"):
-        cmd = f"7z x -y '{archive_file}' -o'{RF}/'"
+        cmd = f"{pv_cmd} '{archive_file}' | tar --strip-components=1 -xz -C '{RF}/' > /dev/null 2>&1"
+    elif archive_lower.endswith((".zip", ".7z")):
+        cmd = f"{pv_cmd} '{archive_file}' | 7z x -si -y -o'{RF}/' -bso0 -bse0 > /dev/null 2>&1"
     elif archive_lower.endswith(".rar"):
-        cmd = f"unrar x -o+ '{archive_file}' '{RF}/'"
+        cmd = f"{pv_cmd} '{archive_file}' | 7z x -si -y -o'{RF}/' -bso0 -bse0 > /dev/null 2>&1"
     else:
         print("\nUnsupported format!\n")
         exit()
 
     return_code = os.system(cmd)
     if return_code != 0:
-        print(f"\nError during extraction (Exit Code: {return_code})\n")
+        print(f"\n\033[91mError during extraction (Exit Code: {return_code})\033[0m\n")
         exit()
 
+    print("\n\033[92m✔ Decompression completed successfully!\033[0m\n")
     flash_selected_result(RF)
 
 # ----------------- Main Scan & Selector -----------------
@@ -184,3 +188,4 @@ if result_paths:
 
 else:
     print("\n\033[91mNo ROM files (.zip, .tgz, .7z, .rar) or unzipped folders found in /sdcard!\033[0m\n")
+    
