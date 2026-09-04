@@ -1,30 +1,27 @@
 # Rittik-Hybrib-rom-flasher
 <div align="center">
 
-<h1 style="font-size: 24px; color: #FF6719; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);">RitikTool</h1>
+<div align="center">
+
+<h1 style="font-size: 24px; color: #FF6719; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);">RittikTool</h1>
 
 ![](https://img.shields.io/badge/Compatible%20with%20Android(Termux)-black?logo=android&logoColor=green&style=for-the-badge)
 
-[![Version 1.6.0](https://img.shields.io/badge/Version-1.6.0-brightgreen)](#)
+[![Version 2.0.0](https://img.shields.io/badge/Version-2.0.0-brightgreen)](#)
 
-[![Developer](https://img.shields.io/badge/Developer-Ritik-orange)](#)
+[![Developer](https://img.shields.io/badge/Developer-Rittik-orange)](#)
 
 </div>
 
-## RitikTool To-Do List:
+## RittikTool To-Do List:
 
-- [x] Flash Fastboot ROM / Hybrid ROM
+- [x] Flash Fastboot ROM
 - [ ] More
 
 ## Installation:
 
 1 - Install [Termux](https://github.com/termux/termux-app/releases/latest) & [Termux-Api](https://github.com/termux/termux-api/releases/latest)
 
-2 - From Termux command line (One-line install):
+2 - From Termux command line:
 ```bash
 termux-setup-storage
-```
-```bash
-curl -fsSL https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/rittikinstall.sh | bash
-```
-
