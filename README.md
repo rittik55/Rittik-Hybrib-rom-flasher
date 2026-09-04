@@ -3,17 +3,17 @@
 
 <div align="center">
 
-<h1 style="font-size: 24px; color: #FF6719; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);">RittikTool</h1>
+<h1 style="font-size: 24px; color: #FF6719; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);">RitikTool</h1>
 
 ![](https://img.shields.io/badge/Compatible%20with%20Android(Termux)-black?logo=android&logoColor=green&style=for-the-badge)
 
 [![Version 2.0.0](https://img.shields.io/badge/Version-2.0.0-brightgreen)](#)
 
-[![Developer](https://img.shields.io/badge/Developer-Rittik-orange)](#)
+[![Developer](https://img.shields.io/badge/Developer-Ritik-orange)](#)
 
 </div>
 
-## RittikTool To-Do List:
+## RitikTool To-Do List:
 
 - [x] Flash Fastboot ROM
 - [ ] More
@@ -26,6 +26,5 @@
 ```bash
 termux-setup-storage
 ```
-````bash
+```bash
 curl -fsSL https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/rittikinstall.sh | bash
-
