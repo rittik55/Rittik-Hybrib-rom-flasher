@@ -98,18 +98,19 @@ def decompress_and_flash_rom(archive_file):
     RF = "/sdcard/Download/hybrid-fastboot-rom"
     
     if os.path.exists(RF):
+        print(f"\n\033[93mRemoving previous extracted ROM files...\033[0m")
         shutil.rmtree(RF, ignore_errors=True)
 
     os.makedirs(RF, exist_ok=True)
 
-    print("\ndecompressed..., please wait\n")
+    print(f"\n\033[92mDecompressing ROM archive, please wait...\033[0m\n")
     archive_lower = archive_file.lower()
-    file_size = os.path.getsize(archive_file)
 
     if archive_lower.endswith((".tgz", ".tar.gz")):
-        cmd = f"pv -s {file_size} '{archive_file}' | tar --strip-components=1 -xz -C '{RF}/' > /dev/null 2>&1"
+        file_size = os.path.getsize(archive_file)
+        cmd = f"pv -s {file_size} -p -t -e -r -b '{archive_file}' | tar --strip-components=1 -xz -C '{RF}/' > /dev/null 2>&1"
     elif archive_lower.endswith((".zip", ".7z", ".rar")):
-        cmd = f"pv -s {file_size} '{archive_file}' | 7z x -si -so -y 2>/dev/null | 7z x -si -y -o'{RF}/' -bso0 -bsp0 2>/dev/null || 7z x -y '{archive_file}' -o'{RF}/' -bsp1 -bso0 -bse0"
+        cmd = f"7z x -y '{archive_file}' -o'{RF}/' -bsp1 -bso0 -bse0"
     else:
         print("\nUnsupported format!\n")
         exit()
@@ -119,11 +120,14 @@ def decompress_and_flash_rom(archive_file):
         print(f"\n\033[91mError during extraction (Exit Code: {return_code})\033[0m\n")
         exit()
 
-    print()
+    print("\n\033[92m✔ Decompression completed successfully!\033[0m\n")
 
+    # चेक करें कि क्या यह Stock ROM है (flash_all.sh या flash_all_lock.sh मौजूद है या नहीं)
     has_stock_script = os.path.exists(f"{RF}/flash_all.sh") or os.path.exists(f"{RF}/flash_all_lock.sh")
 
     if not has_stock_script:
+        # अगर Stock ROM नहीं है, तभी आपकी कस्टम स्क्रिप्ट्स डाउनलोड होंगी
+        print("\033[93mAdding custom flasher scripts to ROM folder...\033[0m")
         os.system(f"curl -fsS 'https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/Rittik_xpower.sh' -o '{RF}/Rittik_xpower.sh' > /dev/null 2>&1")
         os.system(f"curl -fsS 'https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/ritik_flash_.sh' -o '{RF}/ritik_flash_.sh' > /dev/null 2>&1")
 
@@ -184,4 +188,3 @@ if main_items:
 
 else:
     print("\n\033[91mNo ROM archives or folders found in storage!\033[0m\n")
-    
