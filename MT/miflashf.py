@@ -6,6 +6,231 @@ import time
 import shutil
 import subprocess
 
+# --- 100% Offline Embedded Custom Scripts ---
+RITTIK_XPOWER_CODE = """#!/data/data/com.termux/files/usr/bin/sh
+# ==========================================================
+# Flash Script for Fastboot ROM (Duchamp)
+# Made by: Ritik
+# ==========================================================
+
+cd "$(dirname "$0")" || exit 1
+
+if command -v termux-fastboot >/dev/null 2>&1; then
+    fastboot="termux-fastboot"
+elif command -v fastboot >/dev/null 2>&1; then
+    fastboot="fastboot"
+else
+    echo "[-] Error: Fastboot not found!"
+    echo "[!] Please install: pkg install termux-adb"
+    exit 1
+fi
+
+echo "=================================================="
+echo "----------------------------------------"
+echo "                                        "
+echo "  ___   _   _   ___  _____  _       "
+echo " / _ \ | | | | / _ \|_   _|| |      "
+echo "| | | || | | || | | | | |  | |      "
+echo "| |_| || |_| || |_| | | |  | |___   "
+echo " \__\_\\___/  \___/  |_|  |_____|  "
+echo "                                        "
+echo "         MADE BY RITIK                  "
+echo "     ROM FLASH TOOL (duchamp)           "
+echo "----------------------------------------"
+echo "=================================================="
+
+echo "[*] Waiting for device..."
+device=$($fastboot getvar product 2>&1 | grep -F "product:" | tr -s " " | cut -d " " -f 2)
+[ -z "$device" ] && device="unknown"
+
+if [ "$device" != "duchamp" ]; then
+    echo "[-] Error: Device mismatch!"
+    echo "    Compatible devices: duchamp"
+    echo "    Detected device: $device"
+    exit 1
+fi
+
+echo "[!] WARNING: This install will delete all your applications, settings and files from internal storage."
+printf "Do you agree? (Y/N) "
+read -r choice
+[ "$choice" != "y" ] && [ "$choice" != "Y" ] && exit 0
+
+echo "###################################################"
+echo "  Flashing started by Ritik's Script...            "
+echo "  After install device will be rebooted.           "
+echo "  Please wait and DO NOT disconnect your device.   "
+echo "###################################################"
+
+$fastboot set_active a
+$fastboot flash apusys_a img/apusys.img
+$fastboot flash apusys_b img/apusys.img
+$fastboot flash audio_dsp_a img/audio_dsp.img
+$fastboot flash audio_dsp_b img/audio_dsp.img
+$fastboot flash boot_a img/boot.img
+$fastboot flash boot_b img/boot.img
+$fastboot flash ccu_a img/ccu.img
+$fastboot flash ccu_b img/ccu.img
+$fastboot flash connsys_bt_a img/connsys_bt.img
+$fastboot flash connsys_bt_b img/connsys_bt.img
+$fastboot flash connsys_gnss_a img/connsys_gnss.img
+$fastboot flash connsys_gnss_b img/connsys_gnss.img
+$fastboot flash connsys_wifi_a img/connsys_wifi.img
+$fastboot flash connsys_wifi_b img/connsys_wifi.img
+$fastboot flash dpm_a img/dpm.img
+$fastboot flash dpm_b img/dpm.img
+$fastboot flash dtbo_a img/dtbo.img
+$fastboot flash dtbo_b img/dtbo.img
+$fastboot flash gpueb_a img/gpueb.img
+$fastboot flash gpueb_b img/gpueb.img
+$fastboot flash gz_a img/gz.img
+$fastboot flash gz_b img/gz.img
+$fastboot flash init_boot_a img/init_boot.img
+$fastboot flash init_boot_b img/init_boot.img
+$fastboot flash lk_a img/lk.img
+$fastboot flash lk_b img/lk.img
+$fastboot flash logo_a img/logo.img
+$fastboot flash logo_b img/logo.img
+$fastboot flash mcf_ota_a img/mcf_ota.img
+$fastboot flash mcf_ota_b img/mcf_ota.img
+$fastboot flash mcupm_a img/mcupm.img
+$fastboot flash mcupm_b img/mcupm.img
+$fastboot flash modem_a img/modem.img
+$fastboot flash modem_b img/modem.img
+$fastboot flash mvpu_algo_a img/mvpu_algo.img
+$fastboot flash mvpu_algo_b img/mvpu_algo.img
+$fastboot flash pi_img_a img/pi_img.img
+$fastboot flash pi_img_b img/pi_img.img
+$fastboot flash preloader_a img/preloader_raw.img
+$fastboot flash preloader_b img/preloader_raw.img
+$fastboot flash scp_a img/scp.img
+$fastboot flash scp_b img/scp.img
+$fastboot flash spmfw_a img/spmfw.img
+$fastboot flash spmfw_b img/spmfw.img
+$fastboot flash sspm_a img/sspm.img
+$fastboot flash sspm_b img/sspm.img
+$fastboot flash tee_a img/tee.img
+$fastboot flash tee_b img/tee.img
+$fastboot flash vbmeta_a img/vbmeta.img
+$fastboot flash vbmeta_b img/vbmeta.img
+$fastboot flash vbmeta_system_a img/vbmeta_system.img
+$fastboot flash vbmeta_system_b img/vbmeta_system.img
+$fastboot flash vbmeta_vendor_a img/vbmeta_vendor.img
+$fastboot flash vbmeta_vendor_b img/vbmeta_vendor.img
+$fastboot flash vcp_a img/vcp.img
+$fastboot flash vcp_b img/vcp.img
+$fastboot flash vendor_boot_a img/vendor_boot.img
+$fastboot flash vendor_boot_b img/vendor_boot.img
+$fastboot flash super img/super.img
+$fastboot erase metadata
+$fastboot erase userdata
+$fastboot erase expdb
+$fastboot erase frp
+$fastboot oem cdms
+$fastboot reboot
+
+echo ""
+echo "[+] ROM Flashing Successfully Completed!"
+echo "[+] Script executed by Ritik."
+"""
+
+RITIK_FLASH_CODE = """#!/data/data/com.termux/files/usr/bin/sh
+cd "$(dirname "$0")" || exit 1
+
+if command -v termux-fastboot >/dev/null 2>&1; then
+    fastboot="termux-fastboot"
+elif command -v fastboot >/dev/null 2>&1; then
+    fastboot="fastboot"
+elif [ -f "./bin/linux/fastboot" ]; then
+    fastboot="./bin/linux/fastboot"
+else
+    fastboot="fastboot"
+fi
+
+echo "=================================================="
+echo "----------------------------------------"
+echo "                                        "
+echo "  ___   _   _   ___  _____  _       "
+echo " / _ \ | | | | / _ \|_   _|| |      "
+echo "| | | || | | || | | | | |  | |      "
+echo "| |_| || |_| || |_| | | |  | |___   "
+echo " \__\_\\___/  \___/  |_|  |_____|  "
+echo "                                        "
+echo "         MADE BY RITIK                  "
+echo "     ROM FLASH TOOL (duchamp)           "
+echo "----------------------------------------"
+echo "=================================================="
+
+echo "[*] Waiting for device..."
+device=$($fastboot getvar product 2>&1 | grep -F "product:" | tr -s " " | cut -d " " -f 2)
+[ -z "$device" ] && device="unknown"
+
+if [ "$device" != "duchamp" ]; then
+    echo "[-] Error: Device mismatch!"
+    echo "    Compatible devices: duchamp"
+    echo "    Detected device: $device"
+    exit 1
+fi
+
+echo "[!] You are going to wipe your data and internal storage."
+echo "[!] It will delete all your files and photos stored on internal storage."
+printf "Do you agree? (Y/N) "
+read -r choice
+[ "$choice" != "y" ] && [ "$choice" != "Y" ] && exit 0
+
+echo "##################################################################"
+echo "Please wait. The device will reboot when installation is finished."
+echo "##################################################################"
+
+$fastboot set_active a
+$fastboot flash apusys_ab images/apusys.img
+$fastboot flash audio_dsp_ab images/audio_dsp.img
+$fastboot flash ccu_ab images/ccu.img
+$fastboot flash connsys_bt_ab images/connsys_bt.img
+$fastboot flash connsys_gnss_ab images/connsys_gnss.img
+$fastboot flash connsys_wifi_ab images/connsys_wifi.img
+$fastboot flash dpm_ab images/dpm.img
+$fastboot flash dtbo_ab images/dtbo.img
+$fastboot flash gpueb_ab images/gpueb.img
+$fastboot flash gz_ab images/gz.img
+$fastboot flash lk_ab images/lk.img
+$fastboot flash logo_ab images/logo.img
+$fastboot flash mcf_ota_ab images/mcf_ota.img
+$fastboot flash mcupm_ab images/mcupm.img
+$fastboot flash modem_ab images/modem.img
+$fastboot flash mvpu_algo_ab images/mvpu_algo.img
+$fastboot flash pi_img_ab images/pi_img.img
+$fastboot flash scp_ab images/scp.img
+$fastboot flash spmfw_ab images/spmfw.img
+$fastboot flash sspm_ab images/sspm.img
+$fastboot flash tee_ab images/tee.img
+$fastboot flash vbmeta_ab images/vbmeta.img
+$fastboot flash vbmeta_system_ab images/vbmeta_system.img
+$fastboot flash vbmeta_vendor_ab images/vbmeta_vendor.img
+$fastboot flash vcp_ab images/vcp.img
+$fastboot flash boot_ab images/boot.img
+$fastboot flash init_boot_ab images/init_boot.img
+$fastboot flash vendor_boot_ab images/vendor_boot.img
+$fastboot flash super images/super.img
+$fastboot erase metadata
+$fastboot erase frp
+$fastboot erase expdb
+$fastboot erase userdata
+$fastboot oem cdms
+$fastboot reboot
+"""
+
+def write_custom_scripts(target_dir):
+    script1 = os.path.join(target_dir, "Rittik_xpower.sh")
+    script2 = os.path.join(target_dir, "ritik_flash_.sh")
+
+    with open(script1, "w", encoding="utf-8") as f:
+        f.write(RITTIK_XPOWER_CODE)
+
+    with open(script2, "w", encoding="utf-8") as f:
+        f.write(RITIK_FLASH_CODE)
+
+    os.system(f"chmod +x '{script1}' '{script2}'")
+
 def check_mode():
     spinner = "|/-\\"
     message = "\r Device not connected in Fastboot! "
@@ -94,44 +319,23 @@ def show_flashing_scripts_menu(rom_dir):
         else:
             print("\nInvalid choice! Please select a valid number.")
 
-def place_custom_scripts(target_rom_dir):
-    # Termux के अंदर लोकल स्टोरेज पाथ
-    prefix = os.environ.get("PREFIX", "/data/data/com.termux/files/usr")
-    local_store = os.path.join(prefix, "share", "RitikTool")
-    os.makedirs(local_store, exist_ok=True)
-
-    scripts = ["Rittik_xpower.sh", "ritik_flash_.sh"]
-
-    for script in scripts:
-        dest_file = os.path.join(target_rom_dir, script)
-        cached_file = os.path.join(local_store, script)
-
-        # 1. पहले लोकल ऑफलाइन स्टोरेज से कॉपी करेगा (बिना इंटरनेट)
-        if os.path.exists(cached_file):
-            shutil.copy2(cached_file, dest_file)
-        else:
-            # 2. अगर लोकल में नहीं है, तभी GitHub से डाउनलोड करके लोकल में भी सेव करेगा
-            url = f"https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/{script}"
-            os.system(f"curl -fsS '{url}' -o '{cached_file}' > /dev/null 2>&1")
-            if os.path.exists(cached_file):
-                shutil.copy2(cached_file, dest_file)
-
 def decompress_and_flash_rom(archive_file):
     RF = "/sdcard/Download/hybrid-fastboot-rom"
     
     if os.path.exists(RF):
+        print("\n\033[93mRemoving previous extracted ROM files...\033[0m")
         shutil.rmtree(RF, ignore_errors=True)
 
     os.makedirs(RF, exist_ok=True)
 
     print("\ndecompressed..., please wait\n")
     archive_lower = archive_file.lower()
-    file_size = os.path.getsize(archive_file)
 
     if archive_lower.endswith((".tgz", ".tar.gz")):
+        file_size = os.path.getsize(archive_file)
         cmd = f"pv -s {file_size} '{archive_file}' | tar --strip-components=1 -xz -C '{RF}/' > /dev/null 2>&1"
     elif archive_lower.endswith((".zip", ".7z", ".rar")):
-        cmd = f"pv -s {file_size} '{archive_file}' | 7z x -si -so -y 2>/dev/null | 7z x -si -y -o'{RF}/' -bso0 -bsp0 2>/dev/null || 7z x -y '{archive_file}' -o'{RF}/' -bsp1 -bso0 -bse0"
+        cmd = f"7z x -y '{archive_file}' -o'{RF}/' -bsp1 -bso0 -bse0"
     else:
         print("\nUnsupported format!\n")
         exit()
@@ -141,13 +345,12 @@ def decompress_and_flash_rom(archive_file):
         print(f"\n\033[91mError during extraction (Exit Code: {return_code})\033[0m\n")
         exit()
 
-    print()
+    print("\n\033[92m✔ Decompression completed successfully!\033[0m\n")
 
     has_stock_script = os.path.exists(f"{RF}/flash_all.sh") or os.path.exists(f"{RF}/flash_all_lock.sh")
 
     if not has_stock_script:
-        # ऑफलाइन ऑटो-कॉपी फंक्शन कॉल
-        place_custom_scripts(RF)
+        write_custom_scripts(RF)
 
     show_flashing_scripts_menu(RF)
 
@@ -206,4 +409,3 @@ if main_items:
 
 else:
     print("\n\033[91mNo ROM archives or folders found in storage!\033[0m\n")
-    
