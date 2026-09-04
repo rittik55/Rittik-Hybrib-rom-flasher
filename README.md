@@ -5,9 +5,9 @@
 
 ![](https://img.shields.io/badge/Compatible%20with%20Android(Termux)-black?logo=android&logoColor=green&style=for-the-badge)
 
-[![Version 1.5.9](https://img.shields.io/badge/Version-1.5.9-brightgreen)](#)
+[![Version 1.6.0](https://img.shields.io/badge/Version-1.5.9-brightgreen)](#)
 
-[![Developer](https://img.shields.io/badge/Developer-Ritik-orange)](#)
+[![Developer](https://img.shields.io/badge/Developer-Rittik-orange)](#)
 
 </div>
 
