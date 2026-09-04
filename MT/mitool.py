@@ -4,7 +4,7 @@ import subprocess
 import sys
 import os
 
-version = "1.5.9"
+version = "2.0.0"
 
 ORANGE = "\033[38;5;208m"
 DIM = "\033[2m"
