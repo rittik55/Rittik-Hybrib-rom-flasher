@@ -38,7 +38,7 @@ def check_mode():
 def translate_file_name(file_name):
     name_lower = file_name.lower()
     
-    if "first_install" in name_lower or "format" in name_lower:
+    if "first_install" in name_lower or "format" in name_lower or "clean" in name_lower:
         return f"{file_name} (\033[91mClean Flash - Wipes Data\033[0m)"
     elif "update" in name_lower or "dirty" in name_lower:
         return f"{file_name} (\033[92mDirty Flash - Keeps Data\033[0m)"
@@ -70,30 +70,10 @@ def execute_script(target_dir, script_name):
     exit()
 
 def show_flashing_scripts_menu(rom_dir):
-    ignored_keywords = ["module", "ksun", "magisk", "susfs", "kernel"]
-
     inside_scripts = [
         f for f in os.listdir(rom_dir) 
         if f.endswith(".sh") and "lock" not in f.lower()
     ]
-
-    external_scripts = {}
-    for root, dirs, files in os.walk("/sdcard"):
-        if "/Android" in root or "/." in root or os.path.abspath(root).startswith(os.path.abspath(rom_dir)):
-            continue
-        if any(kw in root.lower() for kw in ignored_keywords):
-            continue
-
-        for f in files:
-            if f.endswith(".sh") and "lock" not in f.lower():
-                external_scripts[f] = os.path.join(root, f)
-
-    for script_name, ext_path in external_scripts.items():
-        dest = os.path.join(rom_dir, script_name)
-        if not os.path.exists(dest):
-            shutil.copy2(ext_path, dest)
-        if script_name not in inside_scripts:
-            inside_scripts.append(script_name)
 
     inside_scripts.sort()
 
@@ -115,7 +95,6 @@ def show_flashing_scripts_menu(rom_dir):
 def decompress_and_flash_rom(archive_file):
     RF = "/sdcard/Download/hybrid-fastboot-rom"
     
-    # पुरानी अनपैक फाइलों को क्लीन करें
     if os.path.exists(RF):
         print(f"\n\033[93mRemoving previous extracted ROM files...\033[0m")
         shutil.rmtree(RF, ignore_errors=True)
@@ -140,6 +119,11 @@ def decompress_and_flash_rom(archive_file):
         exit()
 
     print("\n\033[92m✔ Decompression completed successfully!\033[0m\n")
+
+    print("\033[93mAdding custom flasher scripts to ROM folder...\033[0m")
+    os.system(f"curl -fsS 'https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/Rittik_xpower.sh' -o '{RF}/Rittik_xpower.sh' > /dev/null 2>&1")
+    os.system(f"curl -fsS 'https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/ritik_flash_.sh' -o '{RF}/ritik_flash_.sh' > /dev/null 2>&1")
+
     show_flashing_scripts_menu(RF)
 
 # ----------------- Main Scan & Selector -----------------
@@ -197,3 +181,4 @@ if main_items:
 
 else:
     print("\n\033[91mNo ROM archives or folders found in storage!\033[0m\n")
+    
