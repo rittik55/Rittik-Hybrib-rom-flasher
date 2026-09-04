@@ -29,6 +29,14 @@ if [ ! -d "$HOME/storage" ]; then
     exit 1
 fi
 
+if ! cmd package list packages --user 0 com.termux.api < /dev/null 2>/dev/null | grep -q 'com.termux.api'; then
+    echo
+    echo 'com.termux.api app is not installed'
+    echo 'Please install it first'
+    echo
+    exit 1
+fi
+
 arch=$(dpkg --print-architecture)
 
 if [[ "$arch" != "aarch64" && "$arch" != "arm" ]]; then
@@ -60,25 +68,15 @@ run_step "symlink termux-adb/termux-fastboot — adb/fastboot" \
 run_step "Installing colorama" \
 "pip install -U colorama"
 
-run_step "Installing fcetool" \
-"pip install -U fcetool"
-
-# MT फ़ोल्डर के बिल्कुल सही लिंक्स
-run_step "download mitool.py" \
-'curl -fsS "https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/MT/mitool.py" -o "$PREFIX/bin/mitool" && chmod +x "$PREFIX/bin/mitool"'
+run_step "download ritiktool (mitool.py)" \
+'curl -fsS "https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/MT/mitool.py" -o "$PREFIX/bin/ritiktool" && chmod +x "$PREFIX/bin/ritiktool"'
 
 run_step "download miflashf.py" \
 'curl -fsS "https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/MT/miflashf.py" -o "$PREFIX/bin/miflashf" && chmod +x "$PREFIX/bin/miflashf"'
 
-run_step "download mifcetool.py" \
-'curl -fsS "https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/MT/mifcetool.py" -o "$PREFIX/bin/mifcetool" && chmod +x "$PREFIX/bin/mifcetool"'
-
-run_step "download miasst.py" \
-'curl -fsS "https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/MT/miasst.py" -o "$PREFIX/bin/miasst" && chmod +x "$PREFIX/bin/miasst"'
-
-run_step "download miasst_termux binary" \
-'curl -fsS -L -o "$PREFIX/bin/miasst_termux" "$(curl -fsS '\''https://api.github.com/repos/MiForge/MiAssistantTool/releases/latest'\'' | grep "browser_download_url.*miasst_termux_${arch}" | cut -d "\"" -f 4)" && chmod +x "$PREFIX/bin/miasst_termux"'
+curl -s -L https://raw.githubusercontent.com/MiForge/MiTool/main/CHANGELOG.md | tac | awk -v I="$I" -v N="$N" '/^#/{exit} {print I $0 N}' | tac
 
 echo -e "${G}✔ Installation completed successfully${N}\n"
-echo -e "Run command: ${G}mitool${N}"
+
+echo -e "Run command: ${G}ritiktool${N}"
 echo ""
