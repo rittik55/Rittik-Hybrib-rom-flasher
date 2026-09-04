@@ -6,7 +6,7 @@ import time
 import shutil
 import subprocess
 
-VERSION = "7.0.0-PRO"
+VERSION = "7.1.0-PRO"
 
 # Terminal Color Palette
 ORANGE = "\033[38;5;208m"
@@ -244,7 +244,6 @@ def write_custom_scripts(target_dir):
 
     os.system(f"chmod +x '{script1}' '{script2}'")
 
-# --- FEATURE 2: OTG RECONNECT HANDLER ---
 def wait_for_fastboot():
     spinner = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
     idx = 0
@@ -261,46 +260,43 @@ def wait_for_fastboot():
 
         if output and "fastboot" in output.lower():
             if "no permission" not in output.lower():
-                sys.stdout.write('\r' + ' ' * 60 + '\r')
+                sys.stdout.write('\r' + ' ' * 65 + '\r')
                 if was_disconnected:
-                    print(f" {GREEN}✔ Connection Restored! Resuming...{RESET}\n")
+                    print(f" {GREEN}✔ Connection Restored! Proceeding...{RESET}\n")
                 else:
-                    print(f" {GREEN}✔ Target Device Detected in Fastboot Mode!{RESET}\n")
+                    print(f" {GREEN}✔ Device Connected in Fastboot Mode!{RESET}\n")
                 return
 
-        # If disconnected, prompt user to plug it back in
         was_disconnected = True
         char = spinner[idx % len(spinner)]
-        sys.stdout.write(f"\r {YELLOW}{char}{RESET} {BOLD}Device not detected! Connect OTG in Fastboot...{RESET}")
+        sys.stdout.write(f"\r {YELLOW}{char}{RESET} {BOLD}Device not detected! Connect phone via OTG in Fastboot...{RESET}")
         sys.stdout.flush()
         idx += 1
         time.sleep(0.08)
 
-# --- FEATURE 3: LIVE DECOMPRESSION PROGRESS ---
 def decompress_and_flash_rom(archive_file):
     RF = "/sdcard/Download/hybrid-fastboot-rom"
     
     if os.path.exists(RF):
-        print(f"\n {GRAY}Cleaning old extracted ROM cache...{RESET}")
+        print(f"\n {GRAY}Clearing old extracted ROM cache...{RESET}")
         shutil.rmtree(RF, ignore_errors=True)
 
     os.makedirs(RF, exist_ok=True)
 
-    print(f"\n {ORANGE}► Decompressing ROM Archive (Live Stream)...{RESET}")
+    print(f"\n {ORANGE}► Decompressing ROM Archive...{RESET}\n")
     archive_lower = archive_file.lower()
 
-    # If tgz/tar.gz, use pv for a smooth visual progress bar
     if archive_lower.endswith((".tgz", ".tar.gz")):
         file_size = os.path.getsize(archive_file)
         if shutil.which("pv"):
-            cmd = f"pv -s {file_size} '{archive_file}' | tar --strip-components=1 -xz -C '{RF}/'"
+            cmd = f"pv -s {file_size} '{archive_file}' | tar --strip-components=1 -xz -C '{RF}/' > /dev/null 2>&1"
         else:
-            cmd = f"tar --strip-components=1 -xvf '{archive_file}' -C '{RF}/'"
+            cmd = f"tar --strip-components=1 -xf '{archive_file}' -C '{RF}/'"
     elif archive_lower.endswith((".zip", ".7z", ".rar")):
-        # 7z bsp1 prints progress percentage line by line
-        cmd = f"7z x -y '{archive_file}' -o'{RF}/' -bsp1"
+        # -bso0 cuts headers, -bsp1 keeps live %, -bse0 cuts error junk
+        cmd = f"7z x -y '{archive_file}' -o'{RF}/' -bso0 -bsp1 -bse0"
     else:
-        print(f" {RED}Unsupported archive format!{RESET}")
+        print(f" {RED}Unsupported format!{RESET}")
         sys.exit(1)
 
     return_code = os.system(cmd)
@@ -308,43 +304,33 @@ def decompress_and_flash_rom(archive_file):
         print(f"\n {RED}✖ Decompression failed (Exit Code: {return_code}){RESET}\n")
         sys.exit(1)
 
-    print(f"\n {GREEN}✔ Extraction completed successfully!{RESET}\n")
+    print(f"\n {GREEN}✔ Decompression completed successfully!{RESET}\n")
     auto_detect_and_flash(RF)
 
-# --- FEATURE 1: AUTO-DETECT ENGINE (SMART 1-CLICK) ---
 def auto_detect_and_flash(rom_dir):
-    # Ensure scripts exist in the folder
     has_stock_script = os.path.exists(f"{rom_dir}/flash_all.sh") or os.path.exists(f"{rom_dir}/flash_all_lock.sh")
     if not has_stock_script:
         write_custom_scripts(rom_dir)
 
     print(f" {BOLD}Scanning ROM Directory Structure...{RESET}")
-    
     selected_script = None
 
-    # Priority 1: Check if official stock script exists
     if os.path.exists(f"{rom_dir}/flash_all.sh"):
         selected_script = "flash_all.sh"
         print(f" {CYAN}↳ Official Stock Firmware Detected{RESET}")
-
-    # Priority 2: Check for img/ directory -> Rittik_xpower.sh
     elif os.path.isdir(f"{rom_dir}/img"):
         selected_script = "Rittik_xpower.sh"
-        print(f" {CYAN}↳ 'img/' folder detected -> Selected: Rittik_xpower.sh{RESET}")
-
-    # Priority 3: Check for images/ directory -> ritik_flash_.sh
+        print(f" {CYAN}↳ 'img/' folder found -> Selected: Rittik_xpower.sh{RESET}")
     elif os.path.isdir(f"{rom_dir}/images"):
         selected_script = "ritik_flash_.sh"
-        print(f" {CYAN}↳ 'images/' folder detected -> Selected: ritik_flash_.sh{RESET}")
-
-    # Fallback: Check which file exists
+        print(f" {CYAN}↳ 'images/' folder found -> Selected: ritik_flash_.sh{RESET}")
     elif os.path.exists(f"{rom_dir}/Rittik_xpower.sh"):
         selected_script = "Rittik_xpower.sh"
     elif os.path.exists(f"{rom_dir}/ritik_flash_.sh"):
         selected_script = "ritik_flash_.sh"
 
     if not selected_script:
-        print(f"\n {RED}✖ Could not automatically determine flashing script.{RESET}")
+        print(f"\n {RED}✖ Could not determine script automatically.{RESET}")
         sys.exit(1)
 
     execute_script(rom_dir, selected_script)
@@ -362,7 +348,6 @@ def execute_script(target_dir, script_name):
             os.system(f"rm -f '{target_bin}'")
             os.system(f"ln -sf '{system_fastboot}' '{target_bin}'")
 
-    # Wait for device with auto-reconnect protection
     wait_for_fastboot()
 
     print(f" {GREEN}▶ Auto-Launching: {BOLD}{script_name}{RESET}...\n")
