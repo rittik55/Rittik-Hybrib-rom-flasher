@@ -56,7 +56,13 @@ def execute_script(target_dir, script_name):
     exit()
 
 def show_flashing_scripts_menu(rom_dir):
-    allowed_scripts = ["Rittik_xpower.sh", "ritik_flash_.sh"]
+    # आपकी दोनों स्क्रिप्ट्स + स्टॉक ROM की खास स्क्रिप्ट्स
+    allowed_scripts = [
+        "Rittik_xpower.sh", 
+        "ritik_flash_.sh", 
+        "flash_all.sh", 
+        "flash_all_lock.sh"
+    ]
 
     inside_scripts = [
         f for f in os.listdir(rom_dir) 
@@ -66,7 +72,7 @@ def show_flashing_scripts_menu(rom_dir):
     inside_scripts.sort()
 
     if not inside_scripts:
-        print("\n\033[91mNo custom flasher scripts found!\033[0m\n")
+        print("\n\033[91mNo valid flashing scripts found!\033[0m\n")
         exit()
 
     print("\n\033[93m--- Available Flashing Scripts (.sh) ---\033[0m")
