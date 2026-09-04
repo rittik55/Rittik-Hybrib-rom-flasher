@@ -137,27 +137,35 @@ def decompress_and_flash_rom(archive_file):
 valid_extensions = (".tgz", ".tar.gz", ".zip", ".7z", ".rar")
 result_paths = []
 
-print("\n\033[93mScanning storage for ROM archives and folders...\033[0m")
+# Module and system keywords to avoid cluttering results
+ignored_keywords = ["module", "ksun", "magisk", "susfs", "kernel"]
+
+print("\n\033[93mScanning storage for ROM archives and folders with .sh scripts...\033[0m")
+
 for root, dirs, files in os.walk("/sdcard"):
-    if "Android" in root:
+    # Skip Android directory and hidden system folders
+    if "/Android" in root or "/." in root:
         continue
 
-    # Find archives (.zip, .tgz, .7z, .rar)
+    # Skip module subfolders
+    if any(kw in root.lower() for kw in ignored_keywords):
+        continue
+
+    # 1. Detect ROM Archive files (.zip, .7z, .tgz, .rar)
     for f in files:
-        if f.lower().endswith(valid_extensions):
+        f_lower = f.lower()
+        if f_lower.endswith(valid_extensions):
+            if any(kw in f_lower for kw in ignored_keywords):
+                continue
             result_paths.append(os.path.join(root, f))
 
-    # Find folders containing any .sh script
-    for dir_name in dirs:
-        dir_path = os.path.join(root, dir_name)
-        try:
-            dir_files = os.listdir(dir_path)
-            if any(f.endswith(".sh") for f in dir_files):
-                result_paths.append(dir_path)
-        except PermissionError:
-            continue
+    # 2. Directly detect ANY folder that contains .sh files (without needing to move files)
+    has_sh_script = any(f.endswith(".sh") for f in files)
+    if has_sh_script:
+        result_paths.append(root)
 
 if result_paths:
+    # Remove duplicates while keeping original scan order
     result_paths = list(dict.fromkeys(result_paths))
     
     print(f"\nFound {len(result_paths)} ROM item(s):")
@@ -176,11 +184,13 @@ if result_paths:
 
     selected_result = result_paths[selected_index - 1]
 
+    # If it is an archive (.zip/.7z), decompress and flash
     if any(selected_result.lower().endswith(ext) for ext in valid_extensions):
         decompress_and_flash_rom(selected_result)
+    # If it is a folder containing .sh, directly flash from that location
     elif os.path.isdir(selected_result):
         flash_selected_result(selected_result)
 
 else:
-    print("\n\033[91mNo ROM files (.zip, .tgz, .7z, .rar) or unzipped folders found in /sdcard!\033[0m\n")
+    print("\n\033[91mNo ROM archives or folders with .sh scripts found in /sdcard!\033[0m\n")
     
