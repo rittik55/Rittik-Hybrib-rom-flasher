@@ -11,31 +11,31 @@ def check_mode():
     message = "\r Device not connected in Fastboot! "
     while True:
         for char in spinner:
-            process = subprocess.Popen(
-                ['fastboot', 'devices'], 
-                stdout=subprocess.PIPE, 
-                stderr=subprocess.PIPE, 
-                encoding="utf-8", 
-                errors="ignore"
-            )
-            line = process.stdout.readline()
-            if not line and process.poll() is not None:
+            try:
+                # Fastboot डिवाइस की आउटपुट सटीक चेक करें
+                output = subprocess.check_output(
+                    ['fastboot', 'devices'], 
+                    stderr=subprocess.STDOUT
+                ).decode('utf-8', errors='ignore').strip()
+            except Exception:
+                output = ""
+
+            # जब तक आउटपुट में fastboot न मिले, लूप चालू रहेगा
+            if output and "fastboot" in output.lower():
+                if "no permission" in output.lower():
+                    sys.stdout.write(message + char + '\r')
+                    sys.stdout.flush()
+                    time.sleep(0.2)
+                    continue
+
+                sys.stdout.write('\r\033[K')
+                sys.stdout.flush()
+                print("\n\033[92mDevice connected in Fastboot mode!\033[0m\n")
+                return
+            else:
                 sys.stdout.write(message + char + '\r')
                 sys.stdout.flush()
-                time.sleep(0.1)
-                continue
-
-            if "No permission" in line:
-                process.terminate()
-                sys.stdout.write(message + char + '\r')
-                sys.stdout.flush()
-                time.sleep(0.1)
-                continue
-
-            sys.stdout.write('\r\033[K')
-            sys.stdout.flush()
-            print("\n\033[92mDevice connected in Fastboot mode!\033[0m\n")
-            return
+                time.sleep(0.2)
 
 def translate_file_name(file_name):
     name_lower = file_name.lower()
@@ -75,13 +75,13 @@ def execute_script(target_dir, script_name):
 def show_flashing_scripts_menu(rom_dir):
     ignored_keywords = ["module", "ksun", "magisk", "susfs", "kernel"]
 
-    # 1. Collect all scripts inside the ROM folder
+    # 1. ROM फोल्डर के अंदर की स्क्रिप्ट्स
     inside_scripts = [
         f for f in os.listdir(rom_dir) 
         if f.endswith(".sh") and "lock" not in f.lower()
     ]
 
-    # 2. Search for any external standalone scripts outside the ROM folder (e.g. in /sdcard/Download)
+    # 2. स्टोरेज में बाहर पड़ी कस्टम स्क्रिप्ट्स ढूँढें (जैसे Rittik_xpower.sh)
     external_scripts = {}
     for root, dirs, files in os.walk("/sdcard"):
         if "/Android" in root or "/." in root or os.path.abspath(root).startswith(os.path.abspath(rom_dir)):
@@ -93,7 +93,7 @@ def show_flashing_scripts_menu(rom_dir):
             if f.endswith(".sh") and "lock" not in f.lower():
                 external_scripts[f] = os.path.join(root, f)
 
-    # Copy external scripts into the ROM folder so they can flash images
+    # बाहर वाली स्क्रिप्ट्स को ROM फोल्डर में कॉपी करें ताकि वे मेनू में आएँ और काम करें
     for script_name, ext_path in external_scripts.items():
         dest = os.path.join(rom_dir, script_name)
         if not os.path.exists(dest):
@@ -152,7 +152,7 @@ main_items = []
 
 print("\n\033[93mScanning storage for ROM archives and folders...\033[0m")
 
-# 1. Scan ONLY for ROM archives (No .sh scripts in main menu)
+# 1. सिर्फ ROM आर्काइव स्कैन करें
 for root, dirs, files in os.walk("/sdcard"):
     if "/Android" in root or "/." in root:
         continue
@@ -163,12 +163,12 @@ for root, dirs, files in os.walk("/sdcard"):
         f_lower = f.lower()
         if f_lower.endswith(valid_extensions):
             if not any(kw in f_lower for kw in ignored_keywords):
-                main_items.append({"name": f, "path": os.path.join(root, f), "type": "archive"})
+                main_items.append({"path": os.path.join(root, f), "type": "archive"})
 
-# 2. Add extracted ROM folder if it exists
+# 2. एक्सट्रैक्ट किया हुआ ROM फोल्डर अगर है तो जोड़ें
 RF_DIR = "/sdcard/Download/hybrid-fastboot-rom"
 if os.path.isdir(RF_DIR):
-    main_items.append({"name": "hybrid-fastboot-rom", "path": RF_DIR, "type": "folder"})
+    main_items.append({"path": RF_DIR, "type": "folder"})
 
 if main_items:
     # Deduplicate
@@ -181,10 +181,8 @@ if main_items:
 
     print(f"\nFound {len(unique_items)} ROM item(s):")
     for i, item in enumerate(unique_items, start=1):
-        if item["type"] == "archive":
-            print(f" \033[92m{i}\033[0m - [ROM Archive] {item['name']}")
-        else:
-            print(f" \033[92m{i}\033[0m - [Extracted ROM Folder] {item['path']}")
+        # बिना किसी फालतू टैग के सीधा ओरिजिनल पाथ
+        print(f" \033[92m{i}\033[0m - {item['path']}")
 
     while True:
         try:
@@ -203,5 +201,5 @@ if main_items:
         show_flashing_scripts_menu(selected["path"])
 
 else:
-    print("\n\033[91mNo ROM archives or extracted ROM folders found in storage!\033[0m\n")
+    print("\n\033[91mNo ROM archives or folders found in storage!\033[0m\n")
     
