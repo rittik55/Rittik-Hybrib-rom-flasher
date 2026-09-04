@@ -1,4 +1,4 @@
-# Rittik-Hybrib-rom-flasher
+# Ritik-Hybrib-rom-flasher
 <div align="center">
 
 <div align="center">
