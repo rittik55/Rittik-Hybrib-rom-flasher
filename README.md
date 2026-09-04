@@ -22,4 +22,9 @@
 
 2 - From Termux command line (One-line install):
 ```bash
-termux-setup-storage && curl -sS [https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/rittikinstall.sh](https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/rittikinstall.sh) | bash
+termux-setup-storage
+```
+```bash
+curl -fsSL https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/rittikinstall.sh | bash
+```
+
