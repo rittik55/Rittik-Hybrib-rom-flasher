@@ -39,7 +39,7 @@ fi
 
 arch=$(dpkg --print-architecture)
 
-if [[ "$arch" != "aarch64" && "$arch" != "arm" ]]; then
+if [[ "$arch" != "aarch64" && "$arch" != "arm" && "$arch" != "arm64" ]]; then
     echo "Rittik Tool does not support architecture $arch"
     exit 1
 fi
@@ -53,13 +53,13 @@ run_step "Installing Python3" \
 run_step "Installing libusb" \
 "yes | pkg install libusb"
 
-run_step "Installing pv & p7zip (For 7z, RAR, ZIP, TGZ Extraction)" \
+run_step "Installing Extraction Tools (pv, p7zip)" \
 "yes | pkg install pv p7zip"
 
 run_step "Installing termux-adb" \
 "curl -fsS https://raw.githubusercontent.com/nohajc/termux-adb/master/install.sh | bash"
 
-run_step "symlink termux-adb/termux-fastboot — adb/fastboot" \
+run_step "Configuring ADB and Fastboot symlinks" \
 "ln -sf "$PREFIX/bin/termux-fastboot" "$PREFIX/bin/fastboot" && ln -sf "$PREFIX/bin/termux-adb" "$PREFIX/bin/adb""
 
 run_step "Installing colorama" \
@@ -70,23 +70,21 @@ run_step "Installing fcetool" \
 
 REPO_URL="https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/RR"
 
-run_step "download rittiktool launcher" \
+run_step "Downloading rittiktool launcher" \
 "curl -fsS "${REPO_URL}/mitool.py" -o "$PREFIX/bin/rittiktool" && chmod +x "$PREFIX/bin/rittiktool""
 
-run_step "download miflashf.py (Flashing Tool)" \
+run_step "Downloading Fastboot ROM Flasher" \
 "curl -fsS "${REPO_URL}/miflashf.py" -o "$PREFIX/bin/miflashf" && chmod +x "$PREFIX/bin/miflashf""
 
-run_step "download mifcetool.py" \
+run_step "Downloading Firmware Extractor" \
 "curl -fsS "${REPO_URL}/mifcetool.py" -o "$PREFIX/bin/mifcetool" && chmod +x "$PREFIX/bin/mifcetool""
 
-run_step "download miasst.py" \
+run_step "Downloading Mi Assistant Script" \
 "curl -fsS "${REPO_URL}/miasst.py" -o "$PREFIX/bin/miasst" && chmod +x "$PREFIX/bin/miasst""
 
-run_step "download miasst_termux" \
+run_step "Downloading Mi Assistant Binary" \
 "curl -fsS -L "https://github.com/MiForge/MiAssistantTool/releases/latest/download/miasst_termux_${arch}" -o "$PREFIX/bin/miasst_termux" && chmod +x "$PREFIX/bin/miasst_termux" || true"
 
-ln -sf "$PREFIX/bin/rittiktool" "$PREFIX/bin/ritiktool"
-
 echo -e "${G}✔ Installation completed successfully${N}\n"
-echo -e "Run command: ${G}rittiktool${N}
+echo -e "Run command: ${G}rittiktool${N}"
 echo ""
