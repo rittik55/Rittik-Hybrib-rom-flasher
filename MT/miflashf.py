@@ -94,23 +94,44 @@ def show_flashing_scripts_menu(rom_dir):
         else:
             print("\nInvalid choice! Please select a valid number.")
 
+def place_custom_scripts(target_rom_dir):
+    # Termux के अंदर लोकल स्टोरेज पाथ
+    prefix = os.environ.get("PREFIX", "/data/data/com.termux/files/usr")
+    local_store = os.path.join(prefix, "share", "RitikTool")
+    os.makedirs(local_store, exist_ok=True)
+
+    scripts = ["Rittik_xpower.sh", "ritik_flash_.sh"]
+
+    for script in scripts:
+        dest_file = os.path.join(target_rom_dir, script)
+        cached_file = os.path.join(local_store, script)
+
+        # 1. पहले लोकल ऑफलाइन स्टोरेज से कॉपी करेगा (बिना इंटरनेट)
+        if os.path.exists(cached_file):
+            shutil.copy2(cached_file, dest_file)
+        else:
+            # 2. अगर लोकल में नहीं है, तभी GitHub से डाउनलोड करके लोकल में भी सेव करेगा
+            url = f"https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/{script}"
+            os.system(f"curl -fsS '{url}' -o '{cached_file}' > /dev/null 2>&1")
+            if os.path.exists(cached_file):
+                shutil.copy2(cached_file, dest_file)
+
 def decompress_and_flash_rom(archive_file):
     RF = "/sdcard/Download/hybrid-fastboot-rom"
     
     if os.path.exists(RF):
-        print(f"\n\033[93mRemoving previous extracted ROM files...\033[0m")
         shutil.rmtree(RF, ignore_errors=True)
 
     os.makedirs(RF, exist_ok=True)
 
-    print(f"\n\033[92mDecompressing ROM archive, please wait...\033[0m\n")
+    print("\ndecompressed..., please wait\n")
     archive_lower = archive_file.lower()
+    file_size = os.path.getsize(archive_file)
 
     if archive_lower.endswith((".tgz", ".tar.gz")):
-        file_size = os.path.getsize(archive_file)
-        cmd = f"pv -s {file_size} -p -t -e -r -b '{archive_file}' | tar --strip-components=1 -xz -C '{RF}/' > /dev/null 2>&1"
+        cmd = f"pv -s {file_size} '{archive_file}' | tar --strip-components=1 -xz -C '{RF}/' > /dev/null 2>&1"
     elif archive_lower.endswith((".zip", ".7z", ".rar")):
-        cmd = f"7z x -y '{archive_file}' -o'{RF}/' -bsp1 -bso0 -bse0"
+        cmd = f"pv -s {file_size} '{archive_file}' | 7z x -si -so -y 2>/dev/null | 7z x -si -y -o'{RF}/' -bso0 -bsp0 2>/dev/null || 7z x -y '{archive_file}' -o'{RF}/' -bsp1 -bso0 -bse0"
     else:
         print("\nUnsupported format!\n")
         exit()
@@ -120,16 +141,13 @@ def decompress_and_flash_rom(archive_file):
         print(f"\n\033[91mError during extraction (Exit Code: {return_code})\033[0m\n")
         exit()
 
-    print("\n\033[92m✔ Decompression completed successfully!\033[0m\n")
+    print()
 
-    # चेक करें कि क्या यह Stock ROM है (flash_all.sh या flash_all_lock.sh मौजूद है या नहीं)
     has_stock_script = os.path.exists(f"{RF}/flash_all.sh") or os.path.exists(f"{RF}/flash_all_lock.sh")
 
     if not has_stock_script:
-        # अगर Stock ROM नहीं है, तभी आपकी कस्टम स्क्रिप्ट्स डाउनलोड होंगी
-        print("\033[93mAdding custom flasher scripts to ROM folder...\033[0m")
-        os.system(f"curl -fsS 'https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/Rittik_xpower.sh' -o '{RF}/Rittik_xpower.sh' > /dev/null 2>&1")
-        os.system(f"curl -fsS 'https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/ritik_flash_.sh' -o '{RF}/ritik_flash_.sh' > /dev/null 2>&1")
+        # ऑफलाइन ऑटो-कॉपी फंक्शन कॉल
+        place_custom_scripts(RF)
 
     show_flashing_scripts_menu(RF)
 
@@ -188,3 +206,4 @@ if main_items:
 
 else:
     print("\n\033[91mNo ROM archives or folders found in storage!\033[0m\n")
+    
