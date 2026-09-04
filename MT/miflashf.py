@@ -38,7 +38,7 @@ def check_mode():
 def translate_file_name(file_name):
     name_lower = file_name.lower()
     
-    if "first_install" in name_lower or "format" in name_lower or "clean" in name_lower:
+    if "first_install" in name_lower or "format" in name_lower or "clean" in name_lower or "xpower" in name_lower:
         return f"{file_name} (\033[91mClean Flash - Wipes Data\033[0m)"
     elif "update" in name_lower or "dirty" in name_lower:
         return f"{file_name} (\033[92mDirty Flash - Keeps Data\033[0m)"
@@ -70,15 +70,18 @@ def execute_script(target_dir, script_name):
     exit()
 
 def show_flashing_scripts_menu(rom_dir):
+    # सिर्फ आपकी दोनों स्क्रिप्ट्स ही लिस्ट में आएँगी
+    allowed_scripts = ["Rittik_xpower.sh", "ritik_flash_.sh"]
+
     inside_scripts = [
         f for f in os.listdir(rom_dir) 
-        if f.endswith(".sh") and "lock" not in f.lower()
+        if f in allowed_scripts
     ]
 
     inside_scripts.sort()
 
     if not inside_scripts:
-        print("\n\033[91mNo flashing scripts (.sh) found!\033[0m\n")
+        print("\n\033[91mNo custom flasher scripts found!\033[0m\n")
         exit()
 
     print("\n\033[93m--- Available Flashing Scripts (.sh) ---\033[0m")
