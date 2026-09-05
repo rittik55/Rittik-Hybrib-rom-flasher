@@ -6,7 +6,7 @@ import time
 import shutil
 import subprocess
 
-# --- 100% Offline Embedded Custom Scripts ---
+# --- 100% Offline Embedded Custom Scripts (Poco X6 Pro / Duchamp) ---
 RITTIK_XPOWER_CODE = r"""#!/data/data/com.termux/files/usr/bin/sh
 # ==========================================================
 # Flash Script for Fastboot ROM (Duchamp)
@@ -210,7 +210,7 @@ $fastboot flash vcp_ab images/vcp.img
 $fastboot flash boot_ab images/boot.img
 $fastboot flash init_boot_ab images/init_boot.img
 $fastboot flash vendor_boot_ab images/vendor_boot.img
-$fastboot flash super images/super.img
+$fastboot super images/super.img
 $fastboot erase metadata
 $fastboot erase frp
 $fastboot erase expdb
@@ -220,41 +220,26 @@ $fastboot reboot
 """
 
 def find_working_rom_dir(base_dir):
-    """
-    अगर ROM के अंदर कोई सब-फोल्डर बना हो, तो असली ROM फोल्डर ढूँढता है
-    """
     for root, dirs, files in os.walk(base_dir):
         if "img" in dirs or "images" in dirs or "flash_all.sh" in files:
             return root
     return base_dir
 
-def write_matching_script(target_dir):
-    if os.path.isdir(os.path.join(target_dir, "img")):
-        script_path = os.path.join(target_dir, "Rittik_xpower.sh")
-        with open(script_path, "w", encoding="utf-8") as f:
-            f.write(RITTIK_XPOWER_CODE)
-        os.system(f"chmod +x '{script_path}'")
-    elif os.path.isdir(os.path.join(target_dir, "images")):
-        script_path = os.path.join(target_dir, "ritik_flash_.sh")
-        with open(script_path, "w", encoding="utf-8") as f:
-            f.write(RITIK_FLASH_CODE)
-        os.system(f"chmod +x '{script_path}'")
-
 def check_mode():
     spinner = "|/-\\"
-    message = "\r Device not connected in Fastboot! "
+    message = "\r Waiting for Fastboot / ADB device... "
     while True:
         for char in spinner:
             try:
-                output = subprocess.check_output(
+                fb_out = subprocess.check_output(
                     ['fastboot', 'devices'], 
                     stderr=subprocess.STDOUT
                 ).decode('utf-8', errors='ignore').strip()
             except Exception:
-                output = ""
+                fb_out = ""
 
-            if output and "fastboot" in output.lower():
-                if "no permission" in output.lower():
+            if fb_out and "fastboot" in fb_out.lower():
+                if "no permission" in fb_out.lower():
                     sys.stdout.write(message + char + '\r')
                     sys.stdout.flush()
                     time.sleep(0.2)
@@ -264,6 +249,29 @@ def check_mode():
                 sys.stdout.flush()
                 print("\n\033[92mDevice connected in Fastboot mode!\033[0m\n")
                 return
+
+            try:
+                adb_out = subprocess.check_output(
+                    ['adb', 'devices'], 
+                    stderr=subprocess.STDOUT
+                ).decode('utf-8', errors='ignore').strip()
+            except Exception:
+                adb_out = ""
+
+            lines = [l for l in adb_out.split('\n')[1:] if l.strip()]
+            for line in lines:
+                if "\tdevice" in line:
+                    sys.stdout.write('\r\033[K')
+                    sys.stdout.flush()
+                    print("\n\033[93mDevice detected in ADB mode! Rebooting to Fastboot...\033[0m")
+                    os.system("adb reboot bootloader >/dev/null 2>&1")
+                    time.sleep(3)
+                    break
+                elif "\tunauthorized" in line:
+                    sys.stdout.write("\r Please allow USB Debugging prompt on phone screen! " + char + '\r')
+                    sys.stdout.flush()
+                    time.sleep(0.2)
+                    break
             else:
                 sys.stdout.write(message + char + '\r')
                 sys.stdout.flush()
@@ -291,46 +299,53 @@ def execute_script(target_dir, script_name):
             os.system(f"rm -f '{target_bin}'")
             os.system(f"ln -sf '{system_fastboot}' '{target_bin}'")
 
-    print("\nEnsure target phone is connected in Fastboot mode...\n")
+    print("\nEnsure target phone is connected...\n")
     check_mode()
 
     print(f"\n\033[92mExecuting {script_name}...\033[0m\n")
     os.system(f"cd '{target_dir}' && env PATH=\"$PREFIX/bin:$PATH\" bash '{script_name}'")
     exit()
 
-def show_flashing_scripts_menu(rom_dir):
+def setup_duchamp_scripts_if_needed(target_dir, original_path=""):
+    # अगर Stock ROM है तो अपनी स्क्रिप्ट नहीं बनाएगा
+    if os.path.exists(f"{target_dir}/flash_all.sh") or os.path.exists(f"{target_dir}/flash_all_lock.sh"):
+        return
+
+    # सिर्फ Poco X6 Pro (duchamp) होने पर ही ऑटो-राइट करेगा
+    check_str = (target_dir + " " + original_path).lower()
+    if "duchamp" in check_str:
+        if os.path.isdir(os.path.join(target_dir, "img")):
+            script_path = os.path.join(target_dir, "Rittik_xpower.sh")
+            with open(script_path, "w", encoding="utf-8") as f:
+                f.write(RITTIK_XPOWER_CODE)
+            os.system(f"chmod +x '{script_path}'")
+        elif os.path.isdir(os.path.join(target_dir, "images")):
+            script_path = os.path.join(target_dir, "ritik_flash_.sh")
+            with open(script_path, "w", encoding="utf-8") as f:
+                f.write(RITIK_FLASH_CODE)
+            os.system(f"chmod +x '{script_path}'")
+
+def show_flashing_scripts_menu(rom_dir, original_path=""):
     actual_dir = find_working_rom_dir(rom_dir)
+    setup_duchamp_scripts_if_needed(actual_dir, original_path)
 
-    has_stock_script = os.path.exists(f"{actual_dir}/flash_all.sh") or os.path.exists(f"{actual_dir}/flash_all_lock.sh")
-    if not has_stock_script:
-        write_matching_script(actual_dir)
+    all_sh = [f for f in os.listdir(actual_dir) if f.endswith(".sh")]
+    all_sh.sort()
 
-    allowed_scripts = [
-        "Rittik_xpower.sh", 
-        "ritik_flash_.sh", 
-        "flash_all.sh", 
-        "flash_all_lock.sh"
-    ]
-
-    inside_scripts = [
-        f for f in os.listdir(actual_dir) 
-        if f in allowed_scripts
-    ]
-
-    inside_scripts.sort()
-
-    if not inside_scripts:
-        print("\n\033[91mNo valid flashing scripts found!\033[0m\n")
+    if not all_sh:
+        print("\n\033[91m[!] No flashing script (.sh) found in this ROM!\033[0m")
+        print(f"\033[93mTarget Folder:\033[0m {actual_dir}")
+        print("\033[96mCopy your phone's flashing script (.sh) into the above folder and run the tool again.\033[0m\n")
         exit()
 
     print("\n\033[93m--- Available Flashing Scripts (.sh) ---\033[0m")
-    for index, file in enumerate(inside_scripts, start=1):
+    for index, file in enumerate(all_sh, start=1):
         print(f" \033[92m{index}\033[0m - {format_script_name(file)}")
 
     while True:
         choice = input("\nEnter your \033[92mchoice\033[0m: ").strip()
-        if choice.isdigit() and 1 <= int(choice) <= len(inside_scripts):
-            execute_script(actual_dir, inside_scripts[int(choice) - 1])
+        if choice.isdigit() and 1 <= int(choice) <= len(all_sh):
+            execute_script(actual_dir, all_sh[int(choice) - 1])
         else:
             print("\nInvalid choice! Please select a valid number.")
 
@@ -362,7 +377,7 @@ def decompress_and_flash_rom(archive_file):
 
     print("\n\033[92m✔ Decompression completed successfully!\033[0m\n")
 
-    show_flashing_scripts_menu(RF)
+    show_flashing_scripts_menu(RF, archive_file)
 
 # ----------------- Main Scan & Selector -----------------
 
@@ -415,7 +430,7 @@ if main_items:
     if selected["type"] == "archive":
         decompress_and_flash_rom(selected["path"])
     elif selected["type"] == "folder":
-        show_flashing_scripts_menu(selected["path"])
+        show_flashing_scripts_menu(selected["path"], selected["path"])
 
 else:
     print("\n\033[91mNo ROM archives or folders found in storage!\033[0m\n")
