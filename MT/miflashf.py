@@ -219,15 +219,21 @@ $fastboot oem cdms
 $fastboot reboot
 """
 
+def find_working_rom_dir(base_dir):
+    """
+    अगर ROM के अंदर कोई सब-फोल्डर बना हो, तो असली ROM फोल्डर ढूँढता है
+    """
+    for root, dirs, files in os.walk(base_dir):
+        if "img" in dirs or "images" in dirs or "flash_all.sh" in files:
+            return root
+    return base_dir
+
 def write_matching_script(target_dir):
-    # img फ़ोल्डर होने पर सिर्फ Rittik_xpower.sh बनाएगा
     if os.path.isdir(os.path.join(target_dir, "img")):
         script_path = os.path.join(target_dir, "Rittik_xpower.sh")
         with open(script_path, "w", encoding="utf-8") as f:
             f.write(RITTIK_XPOWER_CODE)
         os.system(f"chmod +x '{script_path}'")
-
-    # images फ़ोल्डर होने पर सिर्फ ritik_flash_.sh बनाएगा
     elif os.path.isdir(os.path.join(target_dir, "images")):
         script_path = os.path.join(target_dir, "ritik_flash_.sh")
         with open(script_path, "w", encoding="utf-8") as f:
@@ -293,6 +299,12 @@ def execute_script(target_dir, script_name):
     exit()
 
 def show_flashing_scripts_menu(rom_dir):
+    actual_dir = find_working_rom_dir(rom_dir)
+
+    has_stock_script = os.path.exists(f"{actual_dir}/flash_all.sh") or os.path.exists(f"{actual_dir}/flash_all_lock.sh")
+    if not has_stock_script:
+        write_matching_script(actual_dir)
+
     allowed_scripts = [
         "Rittik_xpower.sh", 
         "ritik_flash_.sh", 
@@ -301,7 +313,7 @@ def show_flashing_scripts_menu(rom_dir):
     ]
 
     inside_scripts = [
-        f for f in os.listdir(rom_dir) 
+        f for f in os.listdir(actual_dir) 
         if f in allowed_scripts
     ]
 
@@ -318,7 +330,7 @@ def show_flashing_scripts_menu(rom_dir):
     while True:
         choice = input("\nEnter your \033[92mchoice\033[0m: ").strip()
         if choice.isdigit() and 1 <= int(choice) <= len(inside_scripts):
-            execute_script(rom_dir, inside_scripts[int(choice) - 1])
+            execute_script(actual_dir, inside_scripts[int(choice) - 1])
         else:
             print("\nInvalid choice! Please select a valid number.")
 
@@ -349,12 +361,6 @@ def decompress_and_flash_rom(archive_file):
         exit()
 
     print("\n\033[92m✔ Decompression completed successfully!\033[0m\n")
-
-    has_stock_script = os.path.exists(f"{RF}/flash_all.sh") or os.path.exists(f"{RF}/flash_all_lock.sh")
-
-    if not has_stock_script:
-        # यहाँ फ़ोल्डर के हिसाब से सटीक स्क्रिप्ट लिखी जाएगी
-        write_matching_script(RF)
 
     show_flashing_scripts_menu(RF)
 
@@ -413,3 +419,4 @@ if main_items:
 
 else:
     print("\n\033[91mNo ROM archives or folders found in storage!\033[0m\n")
+    
