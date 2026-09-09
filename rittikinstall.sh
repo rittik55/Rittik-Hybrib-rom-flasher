@@ -59,11 +59,8 @@ run_step "Installing pv & sed" \
 run_step "Installing Archive Tools (7z, rar, zip, tar)" \
 "yes | pkg install p7zip unrar unzip tar"
 
-run_step "Installing termux-adb" \
-"curl -fsS https://raw.githubusercontent.com/nohajc/termux-adb/master/install.sh | bash"
-
-run_step "symlink termux-adb/termux-fastboot — adb/fastboot" \
-'ln -sf "$PREFIX/bin/termux-fastboot" "$PREFIX/bin/fastboot" && ln -sf "$PREFIX/bin/termux-adb" "$PREFIX/bin/adb"'
+run_step "Installing Official Android-Tools (ADB & Fastboot)" \
+"yes | pkg install android-tools"
 
 run_step "Installing colorama" \
 "pip install -U colorama"
