@@ -21,7 +21,7 @@ elif command -v fastboot >/dev/null 2>&1; then
     fastboot="fastboot"
 else
     echo "[-] Error: Fastboot not found!"
-    echo "[!] Please install: pkg install termux-adb"
+    echo "[!] Please install: pkg install android-tools"
     exit 1
 fi
 
@@ -269,6 +269,51 @@ def check_mode():
                 sys.stdout.flush()
                 time.sleep(0.2)
 
+def check_sideload_mode():
+    """
+    Auto-detect ADB Sideload Mode
+    """
+    spinner = "|/-\\"
+    message = "\r Waiting for device in Recovery ADB Sideload mode... "
+    while True:
+        for char in spinner:
+            try:
+                output = subprocess.check_output(
+                    ['adb', 'devices'], 
+                    stderr=subprocess.STDOUT
+                ).decode('utf-8', errors='ignore').strip()
+            except Exception:
+                output = ""
+
+            if output and "sideload" in output.lower():
+                sys.stdout.write('\r\033[K')
+                sys.stdout.flush()
+                print("\n\033[92mDevice connected in ADB Sideload mode!\033[0m\n")
+                return
+            else:
+                sys.stdout.write(message + char + '\r')
+                sys.stdout.flush()
+                time.sleep(0.2)
+
+def flash_via_adb_sideload(zip_path):
+    """
+    Execute ADB Sideload automatically
+    """
+    print("\n==================================================")
+    print("\033[93m           ADB SIDELOAD FLASH TOOL                \033[0m")
+    print("==================================================")
+    print(f"Selected ROM: \033[92m{os.path.basename(zip_path)}\033[0m")
+    print("\n[!] Put target phone into Recovery -> Advanced -> ADB Sideload")
+    print("[!] Connect via OTG cable.\n")
+
+    check_sideload_mode()
+
+    print("\033[92mStarting Sideload... Do not disconnect OTG cable!\033[0m\n")
+    os.system(f"adb sideload '{zip_path}'")
+    
+    print("\n\033[92m✔ Sideload process finished!\033[0m\n")
+    exit()
+
 def format_script_name(file_name):
     name_lower = file_name.lower()
     if name_lower == "flash_all_lock.sh":
@@ -413,9 +458,27 @@ if main_items:
     selected = unique_items[choice - 1]
 
     if selected["type"] == "archive":
-        decompress_and_flash_rom(selected["path"])
+        # अगर चुनी गई फाइल .zip है, तो Sideload का विकल्प देना
+        if selected["path"].lower().endswith(".zip"):
+            print("\n\033[93mSelect Flashing Method:\033[0m")
+            print(" \033[92m1\033[0m - Recovery ADB Sideload (Direct Flash)")
+            print(" \033[92m2\033[0m - Fastboot Mode (Decompress & Flash)")
+            
+            while True:
+                mode_choice = input("\nEnter choice (1 or 2): ").strip()
+                if mode_choice == "1":
+                    flash_via_adb_sideload(selected["path"])
+                elif mode_choice == "2":
+                    decompress_and_flash_rom(selected["path"])
+                    break
+                else:
+                    print("Invalid choice! Enter 1 or 2.")
+        else:
+            decompress_and_flash_rom(selected["path"])
+
     elif selected["type"] == "folder":
         show_flashing_scripts_menu(selected["path"])
 
 else:
     print("\n\033[91mNo ROM archives or folders found in storage!\033[0m\n")
+    
