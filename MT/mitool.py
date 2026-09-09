@@ -5,7 +5,7 @@ import sys
 import os
 import time
 
-version = "2.1.1"
+version = "2.1.3"
 
 ORANGE = "\033[38;5;208m"
 DIM = "\033[2m"
@@ -25,7 +25,9 @@ def get_center(text):
     return ' ' * pad + text
 
 def check_sideload_device():
-    print(f"{ORANGE}[*] Waiting for target device in ADB Sideload mode{RESET}", end="", flush=True)
+    dots = [".  ", ".. ", "..."]
+    base_msg = f"{ORANGE}[*] Waiting for target device in ADB Sideload mode{RESET}"
+    idx = 0
     while True:
         try:
             output = subprocess.check_output(['adb', 'devices'], stderr=subprocess.STDOUT).decode('utf-8', errors='ignore').strip()
@@ -33,11 +35,15 @@ def check_sideload_device():
             output = ""
 
         if output and "sideload" in output.lower():
-            print(f"\n\n{GREEN}✔ Target Device connected in Sideload mode!{RESET}\n")
+            sys.stdout.write('\r\033[K')
+            sys.stdout.flush()
+            print(f"\n{GREEN}✔ Target Device connected in Sideload mode!{RESET}\n")
             return
-        else:
-            print(f"{ORANGE}.{RESET}", end="", flush=True)
-            time.sleep(1.5)
+
+        sys.stdout.write(f"\r{base_msg}{dots[idx % 3]}")
+        sys.stdout.flush()
+        idx += 1
+        time.sleep(0.6)
 
 def run_adb_sideload_launcher():
     print(f"\n{ORANGE}Scanning storage for Recovery ROM (.zip) files...{RESET}")
@@ -52,7 +58,6 @@ def run_adb_sideload_launcher():
                 if not any(kw in f.lower() for kw in ignored_keywords):
                     full_path = os.path.join(root, f)
                     try:
-                        # सिर्फ 500MB से बड़ी फाइल्स को ही ROM माना जाएगा
                         if os.path.getsize(full_path) > 500 * 1024 * 1024:
                             zip_files.append(full_path)
                     except OSError:
