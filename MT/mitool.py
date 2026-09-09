@@ -5,7 +5,7 @@ import sys
 import os
 import time
 
-version = "2.1.0"
+version = "2.1.1"
 
 ORANGE = "\033[38;5;208m"
 DIM = "\033[2m"
@@ -25,28 +25,23 @@ def get_center(text):
     return ' ' * pad + text
 
 def check_sideload_device():
-    spinner = "|/-\\"
-    msg = "\r Waiting for target device in Recovery ADB Sideload mode... "
+    print(f"{ORANGE}[*] Waiting for target device in ADB Sideload mode{RESET}", end="", flush=True)
     while True:
-        for char in spinner:
-            try:
-                output = subprocess.check_output(['adb', 'devices'], stderr=subprocess.STDOUT).decode('utf-8', errors='ignore').strip()
-            except Exception:
-                output = ""
+        try:
+            output = subprocess.check_output(['adb', 'devices'], stderr=subprocess.STDOUT).decode('utf-8', errors='ignore').strip()
+        except Exception:
+            output = ""
 
-            if output and "sideload" in output.lower():
-                sys.stdout.write('\r\033[K')
-                sys.stdout.flush()
-                print(f"\n{GREEN}✔ Target Device connected in Sideload mode!{RESET}\n")
-                return
-            else:
-                sys.stdout.write(msg + char + '\r')
-                sys.stdout.flush()
-                time.sleep(0.2)
+        if output and "sideload" in output.lower():
+            print(f"\n\n{GREEN}✔ Target Device connected in Sideload mode!{RESET}\n")
+            return
+        else:
+            print(f"{ORANGE}.{RESET}", end="", flush=True)
+            time.sleep(1.5)
 
 def run_adb_sideload_launcher():
     print(f"\n{ORANGE}Scanning storage for Recovery ROM (.zip) files...{RESET}")
-    ignored_keywords = ["module", "ksun", "magisk", "susfs", "kernel"]
+    ignored_keywords = ["module", "ksun", "magisk", "susfs", "kernel", "magic"]
     zip_files = []
 
     for root, dirs, files in os.walk("/sdcard"):
@@ -55,16 +50,23 @@ def run_adb_sideload_launcher():
         for f in files:
             if f.lower().endswith(".zip"):
                 if not any(kw in f.lower() for kw in ignored_keywords):
-                    zip_files.append(os.path.join(root, f))
+                    full_path = os.path.join(root, f)
+                    try:
+                        # सिर्फ 500MB से बड़ी फाइल्स को ही ROM माना जाएगा
+                        if os.path.getsize(full_path) > 500 * 1024 * 1024:
+                            zip_files.append(full_path)
+                    except OSError:
+                        pass
 
     if not zip_files:
-        print(f"\n{RED}✗ No .zip ROM files found in /sdcard!{RESET}\n")
+        print(f"\n{RED}✗ No valid Recovery ROM files found (>500MB) in storage!{RESET}\n")
         sys.exit(1)
 
     zip_files = list(set(zip_files))
     print(f"\n{GREEN}Found {len(zip_files)} Recovery ROM(s):{RESET}")
     for i, file_path in enumerate(zip_files, start=1):
-        print(f"  {DIM}▸{RESET} [{ORANGE}{i}{RESET}] {os.path.basename(file_path)}")
+        file_size_gb = os.path.getsize(file_path) / (1024 * 1024 * 1024)
+        print(f"  {DIM}▸{RESET} [{ORANGE}{i}{RESET}] {os.path.basename(file_path)} {DIM}({file_size_gb:.2f} GB){RESET}")
 
     while True:
         try:
@@ -139,3 +141,4 @@ else:
     print(f"{RED}✗ Invalid:{RESET} '{choice}'")
     print(f"{DIM}Select 1, 2 or 'q' to quit{RESET}\n")
     sys.exit(1)
+    
