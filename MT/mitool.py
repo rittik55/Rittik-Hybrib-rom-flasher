@@ -3,8 +3,9 @@
 import subprocess
 import sys
 import os
+import time
 
-version = "2.0.0"
+version = "2.1.0"
 
 ORANGE = "\033[38;5;208m"
 DIM = "\033[2m"
@@ -13,21 +14,86 @@ RED = "\033[1;31m"
 GREEN = "\033[1;32m"
 RESET = "\033[0m"
 
-TOOLS = {
-    "1": ("Flash Fastboot / Hybrid ROM", "$PREFIX/bin/miflashf")
-}
-
 try:
     term_width = os.get_terminal_size().columns
 except:
     term_width = 80
 
 def get_center(text):
-    clean = text.replace(ORANGE, '').replace(RESET, '').replace(DIM, '').replace(BOLD, '')
+    clean = text.replace(ORANGE, '').replace(RESET, '').replace(DIM, '').replace(BOLD, '').replace(GREEN, '').replace(RED, '')
     pad = max(0, (term_width - len(clean)) // 2)
     return ' ' * pad + text
 
-separator = f"{DIM}{'━' * min(term_width, 70)}{RESET}"
+def check_sideload_device():
+    spinner = "|/-\\"
+    msg = "\r Waiting for target device in Recovery ADB Sideload mode... "
+    while True:
+        for char in spinner:
+            try:
+                output = subprocess.check_output(['adb', 'devices'], stderr=subprocess.STDOUT).decode('utf-8', errors='ignore').strip()
+            except Exception:
+                output = ""
+
+            if output and "sideload" in output.lower():
+                sys.stdout.write('\r\033[K')
+                sys.stdout.flush()
+                print(f"\n{GREEN}✔ Target Device connected in Sideload mode!{RESET}\n")
+                return
+            else:
+                sys.stdout.write(msg + char + '\r')
+                sys.stdout.flush()
+                time.sleep(0.2)
+
+def run_adb_sideload_launcher():
+    print(f"\n{ORANGE}Scanning storage for Recovery ROM (.zip) files...{RESET}")
+    ignored_keywords = ["module", "ksun", "magisk", "susfs", "kernel"]
+    zip_files = []
+
+    for root, dirs, files in os.walk("/sdcard"):
+        if "/Android" in root or "/." in root:
+            continue
+        for f in files:
+            if f.lower().endswith(".zip"):
+                if not any(kw in f.lower() for kw in ignored_keywords):
+                    zip_files.append(os.path.join(root, f))
+
+    if not zip_files:
+        print(f"\n{RED}✗ No .zip ROM files found in /sdcard!{RESET}\n")
+        sys.exit(1)
+
+    zip_files = list(set(zip_files))
+    print(f"\n{GREEN}Found {len(zip_files)} Recovery ROM(s):{RESET}")
+    for i, file_path in enumerate(zip_files, start=1):
+        print(f"  {DIM}▸{RESET} [{ORANGE}{i}{RESET}] {os.path.basename(file_path)}")
+
+    while True:
+        try:
+            choice = input(f"\n{BOLD}►{RESET} Select ROM number: ").strip()
+            idx = int(choice)
+            if 1 <= idx <= len(zip_files):
+                selected_zip = zip_files[idx - 1]
+                break
+            print(f"{RED}Invalid number!{RESET}")
+        except (ValueError, KeyboardInterrupt):
+            print(f"\n{RED}Cancelled.{RESET}\n")
+            sys.exit(0)
+
+    print(f"\n{BOLD}Selected ROM:{RESET} {GREEN}{os.path.basename(selected_zip)}{RESET}")
+    print(f"{DIM}1. Put Target phone in Recovery -> Advanced -> ADB Sideload{RESET}")
+    print(f"{DIM}2. Connect with OTG Cable{RESET}\n")
+
+    check_sideload_device()
+
+    print(f"{GREEN}Executing: adb sideload '{os.path.basename(selected_zip)}'...{RESET}\n")
+    print(f"{DIM}{'─' * min(term_width, 70)}{RESET}\n")
+    subprocess.run(f"adb sideload '{selected_zip}'", shell=True)
+    print(f"\n{GREEN}✔ Process finished successfully!{RESET}\n")
+    sys.exit(0)
+
+TOOLS = {
+    "1": ("Flash Fastboot / Hybrid ROM", "$PREFIX/bin/miflashf"),
+    "2": ("Flash Recovery ROM (ADB Sideload)", "CUSTOM_SIDELOAD")
+}
 
 print("\n")
 print(get_center(f"{DIM}{'═' * min(term_width, 70)}{RESET}"))
@@ -63,10 +129,13 @@ if choice in ['q', 'quit', 'exit']:
 
 if choice in TOOLS:
     desc, cmd = TOOLS[choice]
-    print(f"\n{ORANGE}►{RESET} Executing: {DIM}{cmd}{RESET}\n")
-    print(f"{DIM}{'─' * min(term_width, 70)}{RESET}\n")
-    subprocess.run(cmd, shell=True)
+    if cmd == "CUSTOM_SIDELOAD":
+        run_adb_sideload_launcher()
+    else:
+        print(f"\n{ORANGE}►{RESET} Executing: {DIM}{cmd}{RESET}\n")
+        print(f"{DIM}{'─' * min(term_width, 70)}{RESET}\n")
+        subprocess.run(cmd, shell=True)
 else:
     print(f"{RED}✗ Invalid:{RESET} '{choice}'")
-    print(f"{DIM}Select 1 or 'q' to quit{RESET}\n")
+    print(f"{DIM}Select 1, 2 or 'q' to quit{RESET}\n")
     sys.exit(1)
