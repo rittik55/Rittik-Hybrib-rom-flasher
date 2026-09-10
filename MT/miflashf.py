@@ -5,16 +5,8 @@ import sys
 import time
 import shutil
 import subprocess
-import urllib.request
 
-# --- Tool Version Configuration ---
-CURRENT_VERSION = "2.0.0"
-
-# Exact GitHub Raw URLs for rittik55
-VERSION_URL = "https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/MT/version.txt"
-SCRIPT_URL = "https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/MT/miflashf.py"
-
-# --- 100% Offline Embedded Custom Scripts (For Duchamp Only) ---
+# --- 100% Offline Embedded Custom Scripts (Safe Flasher for Duchamp) ---
 RITTIK_XPOWER_CODE = r"""#!/data/data/com.termux/files/usr/bin/sh
 # ==========================================================
 # Flash Script for Fastboot ROM (Duchamp)
@@ -69,66 +61,54 @@ echo "  After install device will be rebooted.           "
 echo "  Please wait and DO NOT disconnect your device.   "
 echo "###################################################"
 
+flash_partition() {
+    img_file="$1"
+    shift
+    if [ -f "$img_file" ]; then
+        for part in "$@"; do
+            echo "[*] Flashing $part..."
+            $fastboot flash "$part" "$img_file"
+        done
+    fi
+}
+
 $fastboot set_active a
-$fastboot flash apusys_a img/apusys.img
-$fastboot flash apusys_b img/apusys.img
-$fastboot flash audio_dsp_a img/audio_dsp.img
-$fastboot flash audio_dsp_b img/audio_dsp.img
-$fastboot flash boot_a img/boot.img
-$fastboot flash boot_b img/boot.img
-$fastboot flash ccu_a img/ccu.img
-$fastboot flash ccu_b img/ccu.img
-$fastboot flash connsys_bt_a img/connsys_bt.img
-$fastboot flash connsys_bt_b img/connsys_bt.img
-$fastboot flash connsys_gnss_a img/connsys_gnss.img
-$fastboot flash connsys_gnss_b img/connsys_gnss.img
-$fastboot flash connsys_wifi_a img/connsys_wifi.img
-$fastboot flash connsys_wifi_b img/connsys_wifi.img
-$fastboot flash dpm_a img/dpm.img
-$fastboot flash dpm_b img/dpm.img
-$fastboot flash dtbo_a img/dtbo.img
-$fastboot flash dtbo_b img/dtbo.img
-$fastboot flash gpueb_a img/gpueb.img
-$fastboot flash gpueb_b img/gpueb.img
-$fastboot flash gz_a img/gz.img
-$fastboot flash gz_b img/gz.img
-$fastboot flash init_boot_a img/init_boot.img
-$fastboot flash init_boot_b img/init_boot.img
-$fastboot flash lk_a img/lk.img
-$fastboot flash lk_b img/lk.img
-$fastboot flash logo_a img/logo.img
-$fastboot flash logo_b img/logo.img
-$fastboot flash mcf_ota_a img/mcf_ota.img
-$fastboot flash mcf_ota_b img/mcf_ota.img
-$fastboot flash mcupm_a img/mcupm.img
-$fastboot flash mcupm_b img/mcupm.img
-$fastboot flash modem_a img/modem.img
-$fastboot flash modem_b img/modem.img
-$fastboot flash mvpu_algo_a img/mvpu_algo.img
-$fastboot flash mvpu_algo_b img/mvpu_algo.img
-$fastboot flash pi_img_a img/pi_img.img
-$fastboot flash pi_img_b img/pi_img.img
-$fastboot flash preloader_a img/preloader_raw.img
-$fastboot flash preloader_b img/preloader_raw.img
-$fastboot flash scp_a img/scp.img
-$fastboot flash scp_b img/scp.img
-$fastboot flash spmfw_a img/spmfw.img
-$fastboot flash spmfw_b img/spmfw.img
-$fastboot flash sspm_a img/sspm.img
-$fastboot flash sspm_b img/sspm.img
-$fastboot flash tee_a img/tee.img
-$fastboot flash tee_b img/tee.img
-$fastboot flash vbmeta_a img/vbmeta.img
-$fastboot flash vbmeta_b img/vbmeta.img
-$fastboot flash vbmeta_system_a img/vbmeta_system.img
-$fastboot flash vbmeta_system_b img/vbmeta_system.img
-$fastboot flash vbmeta_vendor_a img/vbmeta_vendor.img
-$fastboot flash vbmeta_vendor_b img/vbmeta_vendor.img
-$fastboot flash vcp_a img/vcp.img
-$fastboot flash vcp_b img/vcp.img
-$fastboot flash vendor_boot_a img/vendor_boot.img
-$fastboot flash vendor_boot_b img/vendor_boot.img
-$fastboot flash super img/super.img
+
+flash_partition img/apusys.img apusys_a apusys_b
+flash_partition img/audio_dsp.img audio_dsp_a audio_dsp_b
+flash_partition img/boot.img boot_a boot_b
+flash_partition img/ccu.img ccu_a ccu_b
+flash_partition img/connsys_bt.img connsys_bt_a connsys_bt_b
+flash_partition img/connsys_gnss.img connsys_gnss_a connsys_gnss_b
+flash_partition img/connsys_wifi.img connsys_wifi_a connsys_wifi_b
+flash_partition img/dpm.img dpm_a dpm_b
+flash_partition img/dtbo.img dtbo_a dtbo_b
+flash_partition img/gpueb.img gpueb_a gpueb_b
+flash_partition img/gz.img gz_a gz_b
+flash_partition img/init_boot.img init_boot_a init_boot_b
+flash_partition img/lk.img lk_a lk_b
+flash_partition img/logo.img logo_a logo_b
+flash_partition img/mcf_ota.img mcf_ota_a mcf_ota_b
+flash_partition img/mcupm.img mcupm_a mcupm_b
+flash_partition img/modem.img modem_a modem_b
+flash_partition img/mvpu_algo.img mvpu_algo_a mvpu_algo_b
+flash_partition img/pi_img.img pi_img_a pi_img_b
+flash_partition img/preloader_raw.img preloader_a preloader_b
+flash_partition img/scp.img scp_a scp_b
+flash_partition img/spmfw.img spmfw_a spmfw_b
+flash_partition img/sspm.img sspm_a sspm_b
+flash_partition img/tee.img tee_a tee_b
+flash_partition img/vbmeta.img vbmeta_a vbmeta_b
+flash_partition img/vbmeta_system.img vbmeta_system_a vbmeta_system_b
+flash_partition img/vbmeta_vendor.img vbmeta_vendor_a vbmeta_vendor_b
+flash_partition img/vcp.img vcp_a vcp_b
+flash_partition img/vendor_boot.img vendor_boot_a vendor_boot_b
+
+if [ -f img/super.img ]; then
+    echo "[*] Flashing super partition (Chunked)..."
+    $fastboot -S 256M flash super img/super.img
+fi
+
 $fastboot erase metadata
 $fastboot erase userdata
 $fastboot erase expdb
@@ -187,36 +167,51 @@ echo "##################################################################"
 echo "Please wait. The device will reboot when installation is finished."
 echo "##################################################################"
 
+flash_partition() {
+    img_file="$1"
+    part="$2"
+    if [ -f "$img_file" ]; then
+        echo "[*] Flashing $part..."
+        $fastboot flash "$part" "$img_file"
+    fi
+}
+
 $fastboot set_active a
-$fastboot flash apusys_ab images/apusys.img
-$fastboot flash audio_dsp_ab images/audio_dsp.img
-$fastboot flash ccu_ab images/ccu.img
-$fastboot flash connsys_bt_ab images/connsys_bt.img
-$fastboot flash connsys_gnss_ab images/connsys_gnss.img
-$fastboot flash connsys_wifi_ab images/connsys_wifi.img
-$fastboot flash dpm_ab images/dpm.img
-$fastboot flash dtbo_ab images/dtbo.img
-$fastboot flash gpueb_ab images/gpueb.img
-$fastboot flash gz_ab images/gz.img
-$fastboot flash lk_ab images/lk.img
-$fastboot flash logo_ab images/logo.img
-$fastboot flash mcf_ota_ab images/mcf_ota.img
-$fastboot flash mcupm_ab images/mcupm.img
-$fastboot flash modem_ab images/modem.img
-$fastboot flash mvpu_algo_ab images/mvpu_algo.img
-$fastboot flash pi_img_ab images/pi_img.img
-$fastboot flash scp_ab images/scp.img
-$fastboot flash spmfw_ab images/spmfw.img
-$fastboot flash sspm_ab images/sspm.img
-$fastboot flash tee_ab images/tee.img
-$fastboot flash vbmeta_ab images/vbmeta.img
-$fastboot flash vbmeta_system_ab images/vbmeta_system.img
-$fastboot flash vbmeta_vendor_ab images/vbmeta_vendor.img
-$fastboot flash vcp_ab images/vcp.img
-$fastboot flash boot_ab images/boot.img
-$fastboot flash init_boot_ab images/init_boot.img
-$fastboot flash vendor_boot_ab images/vendor_boot.img
-$fastboot flash super images/super.img
+
+flash_partition images/apusys.img apusys_ab
+flash_partition images/audio_dsp.img audio_dsp_ab
+flash_partition images/ccu.img ccu_ab
+flash_partition images/connsys_bt.img connsys_bt_ab
+flash_partition images/connsys_gnss.img connsys_gnss_ab
+flash_partition images/connsys_wifi.img connsys_wifi_ab
+flash_partition images/dpm.img dpm_ab
+flash_partition images/dtbo.img dtbo_ab
+flash_partition images/gpueb.img gpueb_ab
+flash_partition images/gz.img gz_ab
+flash_partition images/lk.img lk_ab
+flash_partition images/logo.img logo_ab
+flash_partition images/mcf_ota.img mcf_ota_ab
+flash_partition images/mcupm.img mcupm_ab
+flash_partition images/modem.img modem_ab
+flash_partition images/mvpu_algo.img mvpu_algo_ab
+flash_partition images/pi_img.img pi_img_ab
+flash_partition images/scp.img scp_ab
+flash_partition images/spmfw.img spmfw_ab
+flash_partition images/sspm.img sspm_ab
+flash_partition images/tee.img tee_ab
+flash_partition images/vbmeta.img vbmeta_ab
+flash_partition images/vbmeta_system.img vbmeta_system_ab
+flash_partition images/vbmeta_vendor.img vbmeta_vendor_ab
+flash_partition images/vcp.img vcp_ab
+flash_partition images/boot.img boot_ab
+flash_partition images/init_boot.img init_boot_ab
+flash_partition images/vendor_boot.img vendor_boot_ab
+
+if [ -f images/super.img ]; then
+    echo "[*] Flashing super partition (Chunked)..."
+    $fastboot -S 256M flash super images/super.img
+fi
+
 $fastboot erase metadata
 $fastboot erase frp
 $fastboot erase expdb
@@ -224,54 +219,6 @@ $fastboot erase userdata
 $fastboot oem cdms
 $fastboot reboot
 """
-
-def enforce_mandatory_update():
-    print("\n\033[93m[*] Checking for security & script updates...\033[0m")
-    
-    latest_version = None
-    try:
-        req = urllib.request.Request(VERSION_URL, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=5) as response:
-            latest_version = response.read().decode('utf-8').strip()
-    except Exception:
-        print("\n\033[91m==================================================")
-        print("  [!] ERROR: Internet Connection Required!")
-        print("  Running outdated tools poses bricking risks.")
-        print("  Please connect to the internet and run again.")
-        print("==================================================\033[0m\n")
-        sys.exit(1)
-
-    if latest_version and latest_version != CURRENT_VERSION:
-        print("\n\033[91m==================================================")
-        print(f"  [!] CRITICAL UPDATE AVAILABLE! (v{latest_version})")
-        print(f"  Your current version (v{CURRENT_VERSION}) is DEPRECATED.")
-        print("  You must update the tool to continue!")
-        print("==================================================\033[0m\n")
-
-        while True:
-            choice = input("Do you want to update now? (Y/N): ").strip().lower()
-            if choice == 'y':
-                print("\n\033[92m[*] Downloading latest update from GitHub...\033[0m")
-                script_path = os.path.realpath(__file__)
-                
-                cmd = f"curl -sL '{SCRIPT_URL}' -o '{script_path}' && chmod +x '{script_path}'"
-                res = os.system(cmd)
-                
-                if res == 0:
-                    print(f"\n\033[92m✔ Tool successfully updated to v{latest_version}!\033[0m")
-                    print("\033[93mRestarting tool now...\033[0m\n")
-                    time.sleep(1)
-                    os.execv(sys.executable, ['python'] + sys.argv)
-                else:
-                    print("\n\033[91m[-] Update failed. Please check your connection.\033[0m\n")
-                    sys.exit(1)
-            elif choice == 'n':
-                print("\n\033[91m[-] Update rejected. Exiting to prevent errors.\033[0m\n")
-                sys.exit(0)
-            else:
-                print("Please enter Y or N.")
-    else:
-        print(f"\033[92m✔ Tool is up-to-date (v{CURRENT_VERSION})\033[0m\n")
 
 def find_working_rom_dir(base_dir):
     for root, dirs, files in os.walk(base_dir):
@@ -334,11 +281,11 @@ def check_mode():
 def format_script_name(file_name):
     name_lower = file_name.lower()
     if name_lower == "flash_all_lock.sh":
-        return "Flash all \033[91m[Lock Bootloader]\033[0m"
+        return "Flash All [\033[91mLock Bootloader\033[0m]"
     elif name_lower == "flash_all.sh":
-        return "Flash all \033[92m[Without Locking Bootloader]\033[0m"
+        return "Flash All [\033[92mWithout Locking Bootloader\033[0m]"
     elif name_lower == "flash_all_except_storage.sh":
-        return "Flash all \033[93m[Keep Data / Without Lock]\033[0m"
+        return "Flash All [\033[93mSave Data / Without Lock\033[0m]"
     elif name_lower == "rittik_xpower.sh":
         return "\033[92mRittik XPower Flash (Fastboot ROM)\033[0m"
     elif name_lower == "ritik_flash_.sh":
@@ -367,7 +314,6 @@ def execute_script(target_dir, script_name):
     sys.exit(0)
 
 def setup_duchamp_scripts_if_needed(target_dir, original_path=""):
-    # Official Xiaomi Fastboot ROMs already contain their own flash_all scripts
     if os.path.exists(os.path.join(target_dir, "flash_all.sh")) or os.path.exists(os.path.join(target_dir, "flash_all_lock.sh")):
         return
 
@@ -375,7 +321,8 @@ def setup_duchamp_scripts_if_needed(target_dir, original_path=""):
     is_duchamp = ("duchamp" in check_str or "wnl" in check_str or 
                   os.path.exists(os.path.join(target_dir, "img", "preloader_raw.img")) or
                   os.path.exists(os.path.join(target_dir, "images", "preloader_raw.img")) or
-                  os.path.exists(os.path.join(target_dir, "img", "apusys.img")))
+                  os.path.exists(os.path.join(target_dir, "img", "apusys.img")) or
+                  os.path.exists(os.path.join(target_dir, "images", "apusys.img")))
 
     if is_duchamp:
         if os.path.isdir(os.path.join(target_dir, "img")):
@@ -393,16 +340,8 @@ def show_flashing_scripts_menu(rom_dir, original_path=""):
     actual_dir = find_working_rom_dir(rom_dir)
     setup_duchamp_scripts_if_needed(actual_dir, original_path)
 
-    # Allowed Termux-compatible scripts
-    allowed_scripts = [
-        "Rittik_xpower.sh", 
-        "ritik_flash_.sh", 
-        "flash_all.sh", 
-        "flash_all_lock.sh",
-        "flash_all_except_storage.sh"
-    ]
+    allowed_scripts = ["Rittik_xpower.sh", "ritik_flash_.sh", "flash_all.sh", "flash_all_lock.sh", "flash_all_except_storage.sh"]
 
-    # Filter out PC scripts like Linux_CleanFlash.sh, MacOS_CleanFlash.sh, etc.
     filtered_scripts = [
         f for f in os.listdir(actual_dir)
         if f in allowed_scripts
@@ -411,7 +350,6 @@ def show_flashing_scripts_menu(rom_dir, original_path=""):
     if filtered_scripts:
         display_scripts = filtered_scripts
     else:
-        # Fallback for other phones: include other .sh files except desktop PC scripts
         display_scripts = [
             f for f in os.listdir(actual_dir)
             if f.endswith(".sh") and not f.lower().startswith(("linux_", "macos_", "mac_"))
@@ -422,7 +360,7 @@ def show_flashing_scripts_menu(rom_dir, original_path=""):
     if not display_scripts:
         print("\n\033[91m[!] No valid Termux flashing script found!\033[0m")
         print(f"\033[93mTarget Folder:\033[0m {actual_dir}")
-        print("\033[96mPlease copy your custom flashing script (.sh) into the folder above and rerun.\033[0m\n")
+        print("\033[96mPlease copy your custom flashing script (.sh) into the above folder and rerun.\033[0m\n")
         sys.exit(1)
 
     print("\n\033[93m--- Available Flashing Scripts (.sh) ---\033[0m")
@@ -450,7 +388,7 @@ def decompress_and_flash_rom(archive_file):
 
     if archive_lower.endswith((".tgz", ".tar.gz")):
         file_size = os.path.getsize(archive_file)
-        cmd = f"pv -s {file_size} '{archive_file}' | tar --strip-components=1 -xz -C '{RF}/' > /dev/null 2>&1"
+        cmd = f"pv -s {file_size} '{archive_file}' | tar -xz -C '{RF}/' > /dev/null 2>&1"
     elif archive_lower.endswith((".zip", ".7z", ".rar")):
         cmd = f"7z x -y '{archive_file}' -o'{RF}/' -bsp1 -bso0 -bse0"
     else:
@@ -467,8 +405,6 @@ def decompress_and_flash_rom(archive_file):
     show_flashing_scripts_menu(RF, archive_file)
 
 # ----------------- Main Scan & Selector -----------------
-
-enforce_mandatory_update()
 
 valid_extensions = (".tgz", ".tar.gz", ".zip", ".7z", ".rar")
 ignored_keywords = ["module", "ksun", "magisk", "susfs", "kernel"]
