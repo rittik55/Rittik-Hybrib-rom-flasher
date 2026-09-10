@@ -281,17 +281,13 @@ def check_mode():
 def format_script_name(file_name):
     name_lower = file_name.lower()
     if name_lower == "flash_all_lock.sh":
-        return "Flash All [\033[91mLock Bootloader\033[0m]"
+        return "Flash all \033[91mwith lock bootloader\033[0m"
     elif name_lower == "flash_all.sh":
-        return "Flash All [\033[92mWithout Locking Bootloader\033[0m]"
+        return "\033[92mFlash all without locking bootloader\033[0m"
     elif name_lower == "flash_all_except_storage.sh":
-        return "Flash All [\033[93mSave Data / Without Lock\033[0m]"
-    elif name_lower == "rittik_xpower.sh":
-        return "\033[92mRittik XPower Flash (Fastboot ROM)\033[0m"
-    elif name_lower == "ritik_flash_.sh":
-        return "\033[92mRitik Flash (Images/AB ROM)\033[0m"
+        return "\033[93mFlash all except storage\033[0m"
     else:
-        return file_name
+        return f"\033[92m{file_name}\033[0m"
 
 def execute_script(target_dir, script_name):
     file_path = os.path.join(target_dir, script_name)
