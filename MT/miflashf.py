@@ -5,8 +5,16 @@ import sys
 import time
 import shutil
 import subprocess
+import urllib.request
 
-# --- 100% Offline Embedded Custom Scripts (Poco X6 Pro / Duchamp) ---
+# --- Tool Version Configuration ---
+CURRENT_VERSION = "2.0.0"
+
+# Exact GitHub Raw URLs for rittik55
+VERSION_URL = "https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/MT/version.txt"
+SCRIPT_URL = "https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/MT/miflashf.py"
+
+# --- 100% Offline Embedded Custom Scripts (For Duchamp Only) ---
 RITTIK_XPOWER_CODE = r"""#!/data/data/com.termux/files/usr/bin/sh
 # ==========================================================
 # Flash Script for Fastboot ROM (Duchamp)
@@ -140,8 +148,6 @@ if command -v termux-fastboot >/dev/null 2>&1; then
     fastboot="termux-fastboot"
 elif command -v fastboot >/dev/null 2>&1; then
     fastboot="fastboot"
-elif [ -f "./bin/linux/fastboot" ]; then
-    fastboot="./bin/linux/fastboot"
 else
     fastboot="fastboot"
 fi
@@ -210,7 +216,7 @@ $fastboot flash vcp_ab images/vcp.img
 $fastboot flash boot_ab images/boot.img
 $fastboot flash init_boot_ab images/init_boot.img
 $fastboot flash vendor_boot_ab images/vendor_boot.img
-$fastboot super images/super.img
+$fastboot flash super images/super.img
 $fastboot erase metadata
 $fastboot erase frp
 $fastboot erase expdb
@@ -218,6 +224,54 @@ $fastboot erase userdata
 $fastboot oem cdms
 $fastboot reboot
 """
+
+def enforce_mandatory_update():
+    print("\n\033[93m[*] Checking for security & script updates...\033[0m")
+    
+    latest_version = None
+    try:
+        req = urllib.request.Request(VERSION_URL, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=5) as response:
+            latest_version = response.read().decode('utf-8').strip()
+    except Exception:
+        print("\n\033[91m==================================================")
+        print("  [!] ERROR: Internet Connection Required!")
+        print("  Running outdated tools poses bricking risks.")
+        print("  Please connect to the internet and run again.")
+        print("==================================================\033[0m\n")
+        sys.exit(1)
+
+    if latest_version and latest_version != CURRENT_VERSION:
+        print("\n\033[91m==================================================")
+        print(f"  [!] CRITICAL UPDATE AVAILABLE! (v{latest_version})")
+        print(f"  Your current version (v{CURRENT_VERSION}) is DEPRECATED.")
+        print("  You must update the tool to continue!")
+        print("==================================================\033[0m\n")
+
+        while True:
+            choice = input("Do you want to update now? (Y/N): ").strip().lower()
+            if choice == 'y':
+                print("\n\033[92m[*] Downloading latest update from GitHub...\033[0m")
+                script_path = os.path.realpath(__file__)
+                
+                cmd = f"curl -sL '{SCRIPT_URL}' -o '{script_path}' && chmod +x '{script_path}'"
+                res = os.system(cmd)
+                
+                if res == 0:
+                    print(f"\n\033[92m✔ Tool successfully updated to v{latest_version}!\033[0m")
+                    print("\033[93mRestarting tool now...\033[0m\n")
+                    time.sleep(1)
+                    os.execv(sys.executable, ['python'] + sys.argv)
+                else:
+                    print("\n\033[91m[-] Update failed. Please check your connection.\033[0m\n")
+                    sys.exit(1)
+            elif choice == 'n':
+                print("\n\033[91m[-] Update rejected. Exiting to prevent errors.\033[0m\n")
+                sys.exit(0)
+            else:
+                print("Please enter Y or N.")
+    else:
+        print(f"\033[92m✔ Tool is up-to-date (v{CURRENT_VERSION})\033[0m\n")
 
 def find_working_rom_dir(base_dir):
     for root, dirs, files in os.walk(base_dir):
@@ -280,9 +334,15 @@ def check_mode():
 def format_script_name(file_name):
     name_lower = file_name.lower()
     if name_lower == "flash_all_lock.sh":
-        return "Flash all \033[91mwith lock bootloader\033[0m"
+        return "Flash all \033[91m[Lock Bootloader]\033[0m"
     elif name_lower == "flash_all.sh":
-        return "\033[92mFlash all without locking bootloader\033[0m"
+        return "Flash all \033[92m[Without Locking Bootloader]\033[0m"
+    elif name_lower == "flash_all_except_storage.sh":
+        return "Flash all \033[93m[Keep Data / Without Lock]\033[0m"
+    elif name_lower == "rittik_xpower.sh":
+        return "\033[92mRittik XPower Flash (Fastboot ROM)\033[0m"
+    elif name_lower == "ritik_flash_.sh":
+        return "\033[92mRitik Flash (Images/AB ROM)\033[0m"
     else:
         return file_name
 
@@ -304,16 +364,20 @@ def execute_script(target_dir, script_name):
 
     print(f"\n\033[92mExecuting {script_name}...\033[0m\n")
     os.system(f"cd '{target_dir}' && env PATH=\"$PREFIX/bin:$PATH\" bash '{script_name}'")
-    exit()
+    sys.exit(0)
 
 def setup_duchamp_scripts_if_needed(target_dir, original_path=""):
-    # अगर Stock ROM है तो अपनी स्क्रिप्ट नहीं बनाएगा
-    if os.path.exists(f"{target_dir}/flash_all.sh") or os.path.exists(f"{target_dir}/flash_all_lock.sh"):
+    # Official Xiaomi Fastboot ROMs already contain their own flash_all scripts
+    if os.path.exists(os.path.join(target_dir, "flash_all.sh")) or os.path.exists(os.path.join(target_dir, "flash_all_lock.sh")):
         return
 
-    # सिर्फ Poco X6 Pro (duchamp) होने पर ही ऑटो-राइट करेगा
     check_str = (target_dir + " " + original_path).lower()
-    if "duchamp" in check_str:
+    is_duchamp = ("duchamp" in check_str or "wnl" in check_str or 
+                  os.path.exists(os.path.join(target_dir, "img", "preloader_raw.img")) or
+                  os.path.exists(os.path.join(target_dir, "images", "preloader_raw.img")) or
+                  os.path.exists(os.path.join(target_dir, "img", "apusys.img")))
+
+    if is_duchamp:
         if os.path.isdir(os.path.join(target_dir, "img")):
             script_path = os.path.join(target_dir, "Rittik_xpower.sh")
             with open(script_path, "w", encoding="utf-8") as f:
@@ -322,30 +386,53 @@ def setup_duchamp_scripts_if_needed(target_dir, original_path=""):
         elif os.path.isdir(os.path.join(target_dir, "images")):
             script_path = os.path.join(target_dir, "ritik_flash_.sh")
             with open(script_path, "w", encoding="utf-8") as f:
-                f.write(RITIK_FLASH_CODE)
+                f.write(RITTIK_FLASH_CODE)
             os.system(f"chmod +x '{script_path}'")
 
 def show_flashing_scripts_menu(rom_dir, original_path=""):
     actual_dir = find_working_rom_dir(rom_dir)
     setup_duchamp_scripts_if_needed(actual_dir, original_path)
 
-    all_sh = [f for f in os.listdir(actual_dir) if f.endswith(".sh")]
-    all_sh.sort()
+    # Allowed Termux-compatible scripts
+    allowed_scripts = [
+        "Rittik_xpower.sh", 
+        "ritik_flash_.sh", 
+        "flash_all.sh", 
+        "flash_all_lock.sh",
+        "flash_all_except_storage.sh"
+    ]
 
-    if not all_sh:
-        print("\n\033[91m[!] No flashing script (.sh) found in this ROM!\033[0m")
+    # Filter out PC scripts like Linux_CleanFlash.sh, MacOS_CleanFlash.sh, etc.
+    filtered_scripts = [
+        f for f in os.listdir(actual_dir)
+        if f in allowed_scripts
+    ]
+
+    if filtered_scripts:
+        display_scripts = filtered_scripts
+    else:
+        # Fallback for other phones: include other .sh files except desktop PC scripts
+        display_scripts = [
+            f for f in os.listdir(actual_dir)
+            if f.endswith(".sh") and not f.lower().startswith(("linux_", "macos_", "mac_"))
+        ]
+
+    display_scripts.sort()
+
+    if not display_scripts:
+        print("\n\033[91m[!] No valid Termux flashing script found!\033[0m")
         print(f"\033[93mTarget Folder:\033[0m {actual_dir}")
-        print("\033[96mCopy your phone's flashing script (.sh) into the above folder and run the tool again.\033[0m\n")
-        exit()
+        print("\033[96mPlease copy your custom flashing script (.sh) into the folder above and rerun.\033[0m\n")
+        sys.exit(1)
 
     print("\n\033[93m--- Available Flashing Scripts (.sh) ---\033[0m")
-    for index, file in enumerate(all_sh, start=1):
+    for index, file in enumerate(display_scripts, start=1):
         print(f" \033[92m{index}\033[0m - {format_script_name(file)}")
 
     while True:
         choice = input("\nEnter your \033[92mchoice\033[0m: ").strip()
-        if choice.isdigit() and 1 <= int(choice) <= len(all_sh):
-            execute_script(actual_dir, all_sh[int(choice) - 1])
+        if choice.isdigit() and 1 <= int(choice) <= len(display_scripts):
+            execute_script(actual_dir, display_scripts[int(choice) - 1])
         else:
             print("\nInvalid choice! Please select a valid number.")
 
@@ -358,7 +445,7 @@ def decompress_and_flash_rom(archive_file):
 
     os.makedirs(RF, exist_ok=True)
 
-    print("\ndecompressed..., please wait\n")
+    print("\nDecompressing archive, please wait...\n")
     archive_lower = archive_file.lower()
 
     if archive_lower.endswith((".tgz", ".tar.gz")):
@@ -368,12 +455,12 @@ def decompress_and_flash_rom(archive_file):
         cmd = f"7z x -y '{archive_file}' -o'{RF}/' -bsp1 -bso0 -bse0"
     else:
         print("\nUnsupported format!\n")
-        exit()
+        sys.exit(1)
 
     return_code = os.system(cmd)
     if return_code != 0:
         print(f"\n\033[91mError during extraction (Exit Code: {return_code})\033[0m\n")
-        exit()
+        sys.exit(1)
 
     print("\n\033[92m✔ Decompression completed successfully!\033[0m\n")
 
@@ -381,12 +468,14 @@ def decompress_and_flash_rom(archive_file):
 
 # ----------------- Main Scan & Selector -----------------
 
+enforce_mandatory_update()
+
 valid_extensions = (".tgz", ".tar.gz", ".zip", ".7z", ".rar")
 ignored_keywords = ["module", "ksun", "magisk", "susfs", "kernel"]
 
 main_items = []
 
-print("\n\033[93mScanning storage for ROM archives and folders...\033[0m")
+print("\033[93mScanning storage for ROM archives and folders...\033[0m")
 
 for root, dirs, files in os.walk("/sdcard"):
     if "/Android" in root or "/." in root:
