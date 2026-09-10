@@ -6,7 +6,7 @@ import time
 import shutil
 import subprocess
 
-# --- 100% Offline Embedded Custom Scripts (Safe Flasher for Duchamp) ---
+# --- 100% Original Embedded Custom Scripts (Duchamp) ---
 RITTIK_XPOWER_CODE = r"""#!/data/data/com.termux/files/usr/bin/sh
 # ==========================================================
 # Flash Script for Fastboot ROM (Duchamp)
@@ -61,54 +61,66 @@ echo "  After install device will be rebooted.           "
 echo "  Please wait and DO NOT disconnect your device.   "
 echo "###################################################"
 
-flash_partition() {
-    img_file="$1"
-    shift
-    if [ -f "$img_file" ]; then
-        for part in "$@"; do
-            echo "[*] Flashing $part..."
-            $fastboot flash "$part" "$img_file"
-        done
-    fi
-}
-
 $fastboot set_active a
-
-flash_partition img/apusys.img apusys_a apusys_b
-flash_partition img/audio_dsp.img audio_dsp_a audio_dsp_b
-flash_partition img/boot.img boot_a boot_b
-flash_partition img/ccu.img ccu_a ccu_b
-flash_partition img/connsys_bt.img connsys_bt_a connsys_bt_b
-flash_partition img/connsys_gnss.img connsys_gnss_a connsys_gnss_b
-flash_partition img/connsys_wifi.img connsys_wifi_a connsys_wifi_b
-flash_partition img/dpm.img dpm_a dpm_b
-flash_partition img/dtbo.img dtbo_a dtbo_b
-flash_partition img/gpueb.img gpueb_a gpueb_b
-flash_partition img/gz.img gz_a gz_b
-flash_partition img/init_boot.img init_boot_a init_boot_b
-flash_partition img/lk.img lk_a lk_b
-flash_partition img/logo.img logo_a logo_b
-flash_partition img/mcf_ota.img mcf_ota_a mcf_ota_b
-flash_partition img/mcupm.img mcupm_a mcupm_b
-flash_partition img/modem.img modem_a modem_b
-flash_partition img/mvpu_algo.img mvpu_algo_a mvpu_algo_b
-flash_partition img/pi_img.img pi_img_a pi_img_b
-flash_partition img/preloader_raw.img preloader_a preloader_b
-flash_partition img/scp.img scp_a scp_b
-flash_partition img/spmfw.img spmfw_a spmfw_b
-flash_partition img/sspm.img sspm_a sspm_b
-flash_partition img/tee.img tee_a tee_b
-flash_partition img/vbmeta.img vbmeta_a vbmeta_b
-flash_partition img/vbmeta_system.img vbmeta_system_a vbmeta_system_b
-flash_partition img/vbmeta_vendor.img vbmeta_vendor_a vbmeta_vendor_b
-flash_partition img/vcp.img vcp_a vcp_b
-flash_partition img/vendor_boot.img vendor_boot_a vendor_boot_b
-
-if [ -f img/super.img ]; then
-    echo "[*] Flashing super partition (Chunked)..."
-    $fastboot -S 256M flash super img/super.img
-fi
-
+$fastboot flash apusys_a img/apusys.img
+$fastboot flash apusys_b img/apusys.img
+$fastboot flash audio_dsp_a img/audio_dsp.img
+$fastboot flash audio_dsp_b img/audio_dsp.img
+$fastboot flash boot_a img/boot.img
+$fastboot flash boot_b img/boot.img
+$fastboot flash ccu_a img/ccu.img
+$fastboot flash ccu_b img/ccu.img
+$fastboot flash connsys_bt_a img/connsys_bt.img
+$fastboot flash connsys_bt_b img/connsys_bt.img
+$fastboot flash connsys_gnss_a img/connsys_gnss.img
+$fastboot flash connsys_gnss_b img/connsys_gnss.img
+$fastboot flash connsys_wifi_a img/connsys_wifi.img
+$fastboot flash connsys_wifi_b img/connsys_wifi.img
+$fastboot flash dpm_a img/dpm.img
+$fastboot flash dpm_b img/dpm.img
+$fastboot flash dtbo_a img/dtbo.img
+$fastboot flash dtbo_b img/dtbo.img
+$fastboot flash gpueb_a img/gpueb.img
+$fastboot flash gpueb_b img/gpueb.img
+$fastboot flash gz_a img/gz.img
+$fastboot flash gz_b img/gz.img
+$fastboot flash init_boot_a img/init_boot.img
+$fastboot flash init_boot_b img/init_boot.img
+$fastboot flash lk_a img/lk.img
+$fastboot flash lk_b img/lk.img
+$fastboot flash logo_a img/logo.img
+$fastboot flash logo_b img/logo.img
+$fastboot flash mcf_ota_a img/mcf_ota.img
+$fastboot flash mcf_ota_b img/mcf_ota.img
+$fastboot flash mcupm_a img/mcupm.img
+$fastboot flash mcupm_b img/mcupm.img
+$fastboot flash modem_a img/modem.img
+$fastboot flash modem_b img/modem.img
+$fastboot flash mvpu_algo_a img/mvpu_algo.img
+$fastboot flash mvpu_algo_b img/mvpu_algo.img
+$fastboot flash pi_img_a img/pi_img.img
+$fastboot flash pi_img_b img/pi_img.img
+$fastboot flash preloader_a img/preloader_raw.img
+$fastboot flash preloader_b img/preloader_raw.img
+$fastboot flash scp_a img/scp.img
+$fastboot flash scp_b img/scp.img
+$fastboot flash spmfw_a img/spmfw.img
+$fastboot flash spmfw_b img/spmfw.img
+$fastboot flash sspm_a img/sspm.img
+$fastboot flash sspm_b img/sspm.img
+$fastboot flash tee_a img/tee.img
+$fastboot flash tee_b img/tee.img
+$fastboot flash vbmeta_a img/vbmeta.img
+$fastboot flash vbmeta_b img/vbmeta.img
+$fastboot flash vbmeta_system_a img/vbmeta_system.img
+$fastboot flash vbmeta_system_b img/vbmeta_system.img
+$fastboot flash vbmeta_vendor_a img/vbmeta_vendor.img
+$fastboot flash vbmeta_vendor_b img/vbmeta_vendor.img
+$fastboot flash vcp_a img/vcp.img
+$fastboot flash vcp_b img/vcp.img
+$fastboot flash vendor_boot_a img/vendor_boot.img
+$fastboot flash vendor_boot_b img/vendor_boot.img
+$fastboot flash super img/super.img
 $fastboot erase metadata
 $fastboot erase userdata
 $fastboot erase expdb
@@ -167,51 +179,36 @@ echo "##################################################################"
 echo "Please wait. The device will reboot when installation is finished."
 echo "##################################################################"
 
-flash_partition() {
-    img_file="$1"
-    part="$2"
-    if [ -f "$img_file" ]; then
-        echo "[*] Flashing $part..."
-        $fastboot flash "$part" "$img_file"
-    fi
-}
-
 $fastboot set_active a
-
-flash_partition images/apusys.img apusys_ab
-flash_partition images/audio_dsp.img audio_dsp_ab
-flash_partition images/ccu.img ccu_ab
-flash_partition images/connsys_bt.img connsys_bt_ab
-flash_partition images/connsys_gnss.img connsys_gnss_ab
-flash_partition images/connsys_wifi.img connsys_wifi_ab
-flash_partition images/dpm.img dpm_ab
-flash_partition images/dtbo.img dtbo_ab
-flash_partition images/gpueb.img gpueb_ab
-flash_partition images/gz.img gz_ab
-flash_partition images/lk.img lk_ab
-flash_partition images/logo.img logo_ab
-flash_partition images/mcf_ota.img mcf_ota_ab
-flash_partition images/mcupm.img mcupm_ab
-flash_partition images/modem.img modem_ab
-flash_partition images/mvpu_algo.img mvpu_algo_ab
-flash_partition images/pi_img.img pi_img_ab
-flash_partition images/scp.img scp_ab
-flash_partition images/spmfw.img spmfw_ab
-flash_partition images/sspm.img sspm_ab
-flash_partition images/tee.img tee_ab
-flash_partition images/vbmeta.img vbmeta_ab
-flash_partition images/vbmeta_system.img vbmeta_system_ab
-flash_partition images/vbmeta_vendor.img vbmeta_vendor_ab
-flash_partition images/vcp.img vcp_ab
-flash_partition images/boot.img boot_ab
-flash_partition images/init_boot.img init_boot_ab
-flash_partition images/vendor_boot.img vendor_boot_ab
-
-if [ -f images/super.img ]; then
-    echo "[*] Flashing super partition (Chunked)..."
-    $fastboot -S 256M flash super images/super.img
-fi
-
+$fastboot flash apusys_ab images/apusys.img
+$fastboot flash audio_dsp_ab images/audio_dsp.img
+$fastboot flash ccu_ab images/ccu.img
+$fastboot flash connsys_bt_ab images/connsys_bt.img
+$fastboot flash connsys_gnss_ab images/connsys_gnss.img
+$fastboot flash connsys_wifi_ab images/connsys_wifi.img
+$fastboot flash dpm_ab images/dpm.img
+$fastboot flash dtbo_ab images/dtbo.img
+$fastboot flash gpueb_ab images/gpueb.img
+$fastboot flash gz_ab images/gz.img
+$fastboot flash lk_ab images/lk.img
+$fastboot flash logo_ab images/logo.img
+$fastboot flash mcf_ota_ab images/mcf_ota.img
+$fastboot flash mcupm_ab images/mcupm.img
+$fastboot flash modem_ab images/modem.img
+$fastboot flash mvpu_algo_ab images/mvpu_algo.img
+$fastboot flash pi_img_ab images/pi_img.img
+$fastboot flash scp_ab images/scp.img
+$fastboot flash spmfw_ab images/spmfw.img
+$fastboot flash sspm_ab images/sspm.img
+$fastboot flash tee_ab images/tee.img
+$fastboot flash vbmeta_ab images/vbmeta.img
+$fastboot flash vbmeta_system_ab images/vbmeta_system.img
+$fastboot flash vbmeta_vendor_ab images/vbmeta_vendor.img
+$fastboot flash vcp_ab images/vcp.img
+$fastboot flash boot_ab images/boot.img
+$fastboot flash init_boot_ab images/init_boot.img
+$fastboot flash vendor_boot_ab images/vendor_boot.img
+$fastboot flash super images/super.img
 $fastboot erase metadata
 $fastboot erase frp
 $fastboot erase expdb
@@ -281,11 +278,11 @@ def check_mode():
 def format_script_name(file_name):
     name_lower = file_name.lower()
     if name_lower == "flash_all_lock.sh":
-        return "Flash all \033[91mwith lock bootloader\033[0m"
+        return "flash_all_lock.sh [\033[91mLock Bootloader\033[0m]"
     elif name_lower == "flash_all.sh":
-        return "\033[92mFlash all without locking bootloader\033[0m"
+        return "flash_all.sh [\033[92mWithout Locking Bootloader\033[0m]"
     elif name_lower == "flash_all_except_storage.sh":
-        return "\033[93mFlash all except storage\033[0m"
+        return "flash_all_except_storage.sh [\033[93mSave Data\033[0m]"
     else:
         return f"\033[92m{file_name}\033[0m"
 
@@ -329,7 +326,7 @@ def setup_duchamp_scripts_if_needed(target_dir, original_path=""):
         elif os.path.isdir(os.path.join(target_dir, "images")):
             script_path = os.path.join(target_dir, "ritik_flash_.sh")
             with open(script_path, "w", encoding="utf-8") as f:
-                f.write(RITTIK_FLASH_CODE)
+                f.write(RITIK_FLASH_CODE)
             os.system(f"chmod +x '{script_path}'")
 
 def show_flashing_scripts_menu(rom_dir, original_path=""):
