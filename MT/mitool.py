@@ -6,49 +6,44 @@ import os
 
 version = "2.0.0"
 
-GOLD = "\033[38;5;220m"
 ORANGE = "\033[38;5;208m"
-DIM = "\033[38;5;240m"
+BLUE = "\033[38;5;75m"
+DIM = "\033[2m"
 BOLD = "\033[1m"
-RED = "\033[38;5;196m"
-GREEN = "\033[38;5;46m"
+RED = "\033[1;31m"
+GREEN = "\033[1;32m"
 RESET = "\033[0m"
 
 TOOLS = {
     "1": ("Flash Fastboot / Hybrid ROM", "$PREFIX/bin/miflashf")
 }
 
-BANNER = f"""
-{GOLD} ___ _ _   _ _  _____           _ 
-| _ (_) |_(_) | |_   _|__  ___ | |
-|   / |  _| | / / | |/ _ \/ _ \| |
-|_|_\_|\__|_|_\_\ |_|\___/\___/|_|{RESET} {DIM}v{version}{RESET}
-"""
+width = 48
 
-print(BANNER)
-print(f" {DIM}Author: Ritik | Target: Poco X6 Pro (duchamp){RESET}")
-print(f" {DIM}{'─' * 44}{RESET}")
-print(f" {BOLD}ACTIONS:{RESET}\n")
+print()
+print(f"{BLUE}●{RESET} {BOLD}RitikTool CLI{RESET} {DIM}(duchamp core v{version}){RESET}")
+print(f"{DIM}{'─' * width}{RESET}")
 
 for key, (desc, _) in TOOLS.items():
-    print(f"   {ORANGE}⟨{key}⟩{RESET}  {desc}")
-print(f"   {DIM}⟨q⟩  Exit{RESET}\n")
+    print(f" {GREEN}{key}.{RESET} {desc}")
+print(f" {DIM}q.{RESET} {DIM}Quit{RESET}")
+
+print(f"{DIM}{'─' * width}{RESET}")
 
 try:
-    choice = input(f" {BOLD}{GREEN}❯{RESET} ").strip().lower()
+    choice = input(f"{ORANGE}Select option » {RESET}").strip().lower()
 except (KeyboardInterrupt, EOFError):
-    print("\n")
+    print(f"\n{DIM}Aborted.{RESET}\n")
     sys.exit(0)
 
 if choice in ['q', 'quit', 'exit']:
-    print(f"{DIM}Bye!{RESET}\n")
     sys.exit(0)
 
 if choice in TOOLS:
     desc, cmd = TOOLS[choice]
-    print(f"\n{DIM}Running {desc}...{RESET}\n")
+    print(f"\n{DIM}Executing: {cmd}{RESET}\n")
     subprocess.run(cmd, shell=True)
 else:
-    print(f"\n{RED}Invalid choice!{RESET}\n")
+    print(f"\n{RED}Error:{RESET} Unknown command '{choice}'\n")
     sys.exit(1)
     
