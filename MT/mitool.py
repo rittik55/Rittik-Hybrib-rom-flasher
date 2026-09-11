@@ -3,14 +3,18 @@
 import subprocess
 import sys
 import os
+import shutil
 
 version = "2.0.0"
 
+# Colors & Formatting
+CYAN = "\033[38;5;51m"
+PURPLE = "\033[38;5;141m"
 ORANGE = "\033[38;5;208m"
-DIM = "\033[2m"
+GREEN = "\033[38;5;48m"
+RED = "\033[38;5;196m"
+GRAY = "\033[38;5;242m"
 BOLD = "\033[1m"
-RED = "\033[1;31m"
-GREEN = "\033[1;32m"
 RESET = "\033[0m"
 
 TOOLS = {
@@ -22,51 +26,50 @@ try:
 except:
     term_width = 80
 
-def get_center(text):
-    clean = text.replace(ORANGE, '').replace(RESET, '').replace(DIM, '').replace(BOLD, '')
-    pad = max(0, (term_width - len(clean)) // 2)
-    return ' ' * pad + text
+box_width = min(term_width - 2, 54)
 
-separator = f"{DIM}{'━' * min(term_width, 70)}{RESET}"
+# Fastboot/ADB quick status check
+def get_quick_status():
+    has_fb = shutil.which("fastboot") or shutil.which("termux-fastboot")
+    return f"{GREEN}READY{RESET}" if has_fb else f"{RED}MISSING FASTBOOT{RESET}"
 
-print("\n")
-print(get_center(f"{DIM}{'═' * min(term_width, 70)}{RESET}"))
-
-title = f"RitikTool v{version}"
-box_width = len(title) + 4
-print(get_center(f"┏{'━' * (box_width - 2)}┓"))
-print(get_center(f"┃  {ORANGE}RitikTool{RESET} {DIM}v{version}{RESET}  ┃"))
-print(get_center(f"┗{'━' * (box_width - 2)}┛"))
-
-print(get_center(f"{DIM}Developed by Ritik{RESET}"))
-print(get_center(f"{DIM}{'═' * min(term_width, 70)}{RESET}"))
 print()
+# Header Box
+print(f"{PURPLE}╭{'─' * (box_width - 2)}╮{RESET}")
+print(f"{PURPLE}│{RESET}  {BOLD}{CYAN}⚡ RITIK TOOL{RESET} {GRAY}v{version}{RESET}" + " " * (box_width - len(f"  ⚡ RITIK TOOL v{version}") - 3) + f"{PURPLE}│{RESET}")
+print(f"{PURPLE}│{RESET}  {GRAY}Status: {get_quick_status()}{RESET}" + " " * (box_width - 24) + f"{PURPLE}│{RESET}")
+print(f"{PURPLE}├{'─' * (box_width - 2)}┤{RESET}")
 
-print(f"{BOLD}Available Operations:{RESET}\n")
+# Body / Options
+print(f"{PURPLE}│{RESET}  {BOLD}MAIN MENU{RESET}" + " " * (box_width - 13) + f"{PURPLE}│{RESET}")
 for key, (desc, _) in TOOLS.items():
-    print(f"  {DIM}▸{RESET} [{ORANGE}{key}{RESET}] {desc}")
-print(f"\n  {DIM}▸{RESET} [{ORANGE}q{RESET}] Quit\n")
+    line = f"  {ORANGE}[{key}]{RESET} {desc}"
+    pad = box_width - len(f"  [{key}] {desc}") - 2
+    print(f"{PURPLE}│{RESET}{line}" + " " * max(0, pad) + f"{PURPLE}│{RESET}")
+
+q_line = f"  {GRAY}[q] Exit Console{RESET}"
+pad_q = box_width - len("  [q] Exit Console") - 2
+print(f"{PURPLE}│{RESET}{q_line}" + " " * max(0, pad_q) + f"{PURPLE}│{RESET}")
+print(f"{PURPLE}╰{'─' * (box_width - 2)}╯{RESET}\n")
 
 if len(sys.argv) > 1:
     choice = sys.argv[1].lower()
-    print(f"{ORANGE}►{RESET} Selected: {ORANGE}{choice}{RESET}\n")
 else:
     try:
-        choice = input(f"{BOLD}►{RESET} Enter choice: ").strip().lower()
+        choice = input(f" {BOLD}{CYAN}ritik@termux{RESET}{GRAY}:{RESET}{ORANGE}~${RESET} ").strip().lower()
     except (KeyboardInterrupt, EOFError):
-        print(f"\n\n{ORANGE}Cancelled{RESET}")
+        print(f"\n{GRAY}Operation aborted.{RESET}\n")
         sys.exit(0)
 
 if choice in ['q', 'quit', 'exit']:
-    print(f"{ORANGE}Exiting...{RESET}\n")
+    print(f"{GRAY}Closing launcher...{RESET}\n")
     sys.exit(0)
 
 if choice in TOOLS:
     desc, cmd = TOOLS[choice]
-    print(f"\n{ORANGE}►{RESET} Executing: {DIM}{cmd}{RESET}\n")
-    print(f"{DIM}{'─' * min(term_width, 70)}{RESET}\n")
+    print(f"\n{GRAY}↳ Launching {desc}...{RESET}\n")
     subprocess.run(cmd, shell=True)
 else:
-    print(f"{RED}✗ Invalid:{RESET} '{choice}'")
-    print(f"{DIM}Select 1 or 'q' to quit{RESET}\n")
+    print(f"\n{RED}✖ Invalid selection:{RESET} '{choice}'\n")
     sys.exit(1)
+    
