@@ -6,6 +6,16 @@ import time
 import shutil
 import subprocess
 
+# --- Modern UI Styles & 256-Colors ---
+ORANGE = "\033[38;5;208m"
+CYAN   = "\033[38;5;51m"
+GREEN  = "\033[38;5;48m"
+RED    = "\033[38;5;196m"
+GRAY   = "\033[38;5;242m"
+YELLOW = "\033[38;5;220m"
+BOLD   = "\033[1m"
+RESET  = "\033[0m"
+
 # --- 100% Offline Embedded Custom Scripts (For Duchamp) ---
 RITTIK_XPOWER_CODE = r"""#!/data/data/com.termux/files/usr/bin/sh
 # ==========================================================
@@ -217,6 +227,13 @@ $fastboot oem cdms
 $fastboot reboot
 """
 
+def format_size(size_bytes):
+    if size_bytes >= 1024 * 1024 * 1024:
+        return f"{size_bytes / (1024 * 1024 * 1024):.1f} GB"
+    elif size_bytes >= 1024 * 1024:
+        return f"{size_bytes / (1024 * 1024):.1f} MB"
+    return f"{size_bytes} B"
+
 def flatten_extracted_folder(target_dir):
     while True:
         items = os.listdir(target_dir)
@@ -236,56 +253,58 @@ def find_working_rom_dir(base_dir):
     return base_dir
 
 def check_mode():
-    spinner = "|/-\\"
-    message = "\r Waiting for Fastboot / ADB device... "
+    spinner = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+    idx = 0
+    message = f" {CYAN}⚡{RESET} {GRAY}Waiting for Fastboot / ADB device...{RESET} "
     while True:
-        for char in spinner:
-            try:
-                fb_out = subprocess.check_output(
-                    ['fastboot', 'devices'], 
-                    stderr=subprocess.STDOUT
-                ).decode('utf-8', errors='ignore').strip()
-            except Exception:
-                fb_out = ""
+        char = spinner[idx % len(spinner)]
+        idx += 1
+        try:
+            fb_out = subprocess.check_output(
+                ['fastboot', 'devices'], 
+                stderr=subprocess.STDOUT
+            ).decode('utf-8', errors='ignore').strip()
+        except Exception:
+            fb_out = ""
 
-            if fb_out and "fastboot" in fb_out.lower():
-                if "no permission" in fb_out.lower():
-                    sys.stdout.write(message + char + '\r')
-                    sys.stdout.flush()
-                    time.sleep(0.2)
-                    continue
-
-                sys.stdout.write('\r\033[K')
-                sys.stdout.flush()
-                print("\n\033[92mDevice connected in Fastboot mode!\033[0m\n")
-                return
-
-            try:
-                adb_out = subprocess.check_output(
-                    ['adb', 'devices'], 
-                    stderr=subprocess.STDOUT
-                ).decode('utf-8', errors='ignore').strip()
-            except Exception:
-                adb_out = ""
-
-            lines = [l for l in adb_out.split('\n')[1:] if l.strip()]
-            for line in lines:
-                if "\tdevice" in line:
-                    sys.stdout.write('\r\033[K')
-                    sys.stdout.flush()
-                    print("\n\033[93mDevice detected in ADB mode! Rebooting to Fastboot...\033[0m")
-                    os.system("adb reboot bootloader >/dev/null 2>&1")
-                    time.sleep(3)
-                    break
-                elif "\tunauthorized" in line:
-                    sys.stdout.write("\r Please allow USB Debugging prompt on phone screen! " + char + '\r')
-                    sys.stdout.flush()
-                    time.sleep(0.2)
-                    break
-            else:
+        if fb_out and "fastboot" in fb_out.lower():
+            if "no permission" in fb_out.lower():
                 sys.stdout.write(message + char + '\r')
                 sys.stdout.flush()
-                time.sleep(0.2)
+                time.sleep(0.1)
+                continue
+
+            sys.stdout.write('\r\033[K')
+            sys.stdout.flush()
+            print(f"\n {GREEN}✔ Device connected in Fastboot mode!{RESET}\n")
+            return
+
+        try:
+            adb_out = subprocess.check_output(
+                ['adb', 'devices'], 
+                stderr=subprocess.STDOUT
+            ).decode('utf-8', errors='ignore').strip()
+        except Exception:
+            adb_out = ""
+
+        lines = [l for l in adb_out.split('\n')[1:] if l.strip()]
+        for line in lines:
+            if "\tdevice" in line:
+                sys.stdout.write('\r\033[K')
+                sys.stdout.flush()
+                print(f"\n {YELLOW}⚡ Device detected in ADB mode! Rebooting to Fastboot...{RESET}")
+                os.system("adb reboot bootloader >/dev/null 2>&1")
+                time.sleep(3)
+                break
+            elif "\tunauthorized" in line:
+                sys.stdout.write(f"\r {RED}! Please allow USB Debugging prompt on phone screen!{RESET} " + char + '\r')
+                sys.stdout.flush()
+                time.sleep(0.1)
+                break
+        else:
+            sys.stdout.write(message + char + '\r')
+            sys.stdout.flush()
+            time.sleep(0.1)
 
 def execute_script(target_dir, script_name):
     file_path = os.path.join(target_dir, script_name)
@@ -300,10 +319,11 @@ def execute_script(target_dir, script_name):
             os.system(f"rm -f '{target_bin}'")
             os.system(f"ln -sf '{system_fastboot}' '{target_bin}'")
 
-    print("\nEnsure target phone is connected...\n")
+    print(f"\n {GRAY}Ensure target phone is connected via OTG...{RESET}")
     check_mode()
 
-    print(f"\n\033[92mExecuting {script_name}...\033[0m\n")
+    print(f" {GREEN}▶ Executing script:{RESET} {BOLD}{script_name}{RESET}\n")
+    print(f"{GRAY}{'─' * 50}{RESET}\n")
     os.system(f"cd '{target_dir}' && env PATH=\"$PREFIX/bin:$PATH\" bash '{script_name}'")
     sys.exit(0)
 
@@ -352,32 +372,36 @@ def show_flashing_scripts_menu(rom_dir, original_path=""):
     display_scripts.sort()
 
     if not display_scripts:
-        print("\n\033[91m[!] No valid Termux flashing script found!\033[0m")
-        print(f"\033[93mTarget Folder:\033[0m {actual_dir}")
-        print("\033[96mPlease copy your custom flashing script (.sh) into the above folder and rerun.\033[0m\n")
+        print(f"\n {RED}✖ No valid flashing script found!{RESET}")
+        print(f" {GRAY}Target Folder:{RESET} {actual_dir}\n")
         sys.exit(1)
 
-    print("\n\033[93m--- Available Flashing Scripts (.sh) ---\033[0m")
+    print(f"\n{ORANGE}╭─ Available Flashing Scripts{RESET}")
     for index, file in enumerate(display_scripts, start=1):
-        print(f" \033[92m{index}\033[0m - \033[92m{file}\033[0m")
+        print(f"{ORANGE}│{RESET}  [{GREEN}{index}{RESET}] {file}")
+    print(f"{ORANGE}╰────────────────────────────{RESET}")
 
     while True:
-        choice = input("\nEnter your \033[92mchoice\033[0m: ").strip()
-        if choice.isdigit() and 1 <= int(choice) <= len(display_scripts):
-            execute_script(actual_dir, display_scripts[int(choice) - 1])
-        else:
-            print("\nInvalid choice! Please select a valid number.")
+        try:
+            choice = input(f"\n {BOLD}{CYAN}select script ❯{RESET} ").strip()
+            if choice.isdigit() and 1 <= int(choice) <= len(display_scripts):
+                execute_script(actual_dir, display_scripts[int(choice) - 1])
+            else:
+                print(f" {RED}Invalid choice! Enter a number between 1 and {len(display_scripts)}{RESET}")
+        except (KeyboardInterrupt, EOFError):
+            print(f"\n\n {GRAY}Flashing cancelled.{RESET}\n")
+            sys.exit(0)
 
 def decompress_and_flash_rom(archive_file):
     RF = "/sdcard/Download/hybrid-fastboot-rom"
     
     if os.path.exists(RF):
-        print("\n\033[93mRemoving previous extracted ROM files...\033[0m")
+        print(f"\n {GRAY}Clearing previous temporary extracted files...{RESET}")
         shutil.rmtree(RF, ignore_errors=True)
 
     os.makedirs(RF, exist_ok=True)
 
-    print("\nDecompressing archive, please wait...\n")
+    print(f"\n {CYAN}⚡ Decompressing archive, please wait...{RESET}\n")
     archive_lower = archive_file.lower()
 
     if archive_lower.endswith((".tgz", ".tar.gz")):
@@ -386,17 +410,16 @@ def decompress_and_flash_rom(archive_file):
     elif archive_lower.endswith((".zip", ".7z", ".rar")):
         cmd = f"7z x -y '{archive_file}' -o'{RF}/' -bsp1 -bso0 -bse0"
     else:
-        print("\nUnsupported format!\n")
+        print(f"\n {RED}Unsupported archive format!{RESET}\n")
         sys.exit(1)
 
     return_code = os.system(cmd)
     if return_code != 0:
-        print(f"\n\033[91mError during extraction (Exit Code: {return_code})\033[0m\n")
+        print(f"\n {RED}✖ Error during decompression (Code: {return_code}){RESET}\n")
         sys.exit(1)
 
     flatten_extracted_folder(RF)
-
-    print("\n\033[92m✔ Decompression completed successfully!\033[0m\n")
+    print(f"\n {GREEN}✔ Decompression completed successfully!{RESET}")
 
     show_flashing_scripts_menu(RF, archive_file)
 
@@ -407,7 +430,7 @@ ignored_keywords = ["module", "ksun", "magisk", "susfs", "kernel"]
 
 main_items = []
 
-print("\033[93mScanning storage for ROM archives and folders...\033[0m")
+print(f"\n {GRAY}Scanning storage for ROM archives and folders...{RESET}")
 
 for root, dirs, files in os.walk("/sdcard"):
     if "/Android" in root or "/." in root:
@@ -419,11 +442,12 @@ for root, dirs, files in os.walk("/sdcard"):
         f_lower = f.lower()
         if f_lower.endswith(valid_extensions):
             if not any(kw in f_lower for kw in ignored_keywords):
-                main_items.append({"path": os.path.join(root, f), "type": "archive"})
+                full_p = os.path.join(root, f)
+                main_items.append({"path": full_p, "type": "archive", "name": f, "size": os.path.getsize(full_p)})
 
 RF_DIR = "/sdcard/Download/hybrid-fastboot-rom"
 if os.path.isdir(RF_DIR):
-    main_items.append({"path": RF_DIR, "type": "folder"})
+    main_items.append({"path": RF_DIR, "type": "folder", "name": "hybrid-fastboot-rom", "size": 0})
 
 if main_items:
     seen = set()
@@ -433,20 +457,30 @@ if main_items:
             seen.add(item["path"])
             unique_items.append(item)
 
-    print(f"\nFound {len(unique_items)} ROM item(s):")
+    print(f"\n{CYAN}╭─ Detected ROMs ({len(unique_items)}){RESET}")
     for i, item in enumerate(unique_items, start=1):
-        print(f" \033[92m{i}\033[0m - {item['path']}")
+        if item["type"] == "archive":
+            size_str = format_size(item["size"])
+            ext = item["name"].split('.')[-1].upper()
+            badge = f"{YELLOW}[{ext} • {size_str}]{RESET}"
+            print(f"{CYAN}│{RESET}  {ORANGE}[{i}]{RESET} {item['name']} {badge}")
+            print(f"{CYAN}│{RESET}      {GRAY}↳ {item['path']}{RESET}")
+        else:
+            badge = f"{GREEN}[EXTRACTED FOLDER]{RESET}"
+            print(f"{CYAN}│{RESET}  {ORANGE}[{i}]{RESET} {item['name']} {badge}")
+            print(f"{CYAN}│{RESET}      {GRAY}↳ {item['path']}{RESET}")
+    print(f"{CYAN}╰─────────────────────────────────────────{RESET}")
 
     while True:
         try:
-            choice = int(input("\nEnter your \033[92mchoice\033[0m: "))
-            if 1 <= choice <= len(unique_items):
+            choice = input(f"\n {BOLD}{CYAN}select ROM ❯{RESET} ").strip()
+            if choice.isdigit() and 1 <= int(choice) <= len(unique_items):
+                selected = unique_items[int(choice) - 1]
                 break
-            print("\nInvalid choice!")
-        except ValueError:
-            print("\nInvalid input!")
-
-    selected = unique_items[choice - 1]
+            print(f" {RED}Invalid choice! Enter a number between 1 and {len(unique_items)}{RESET}")
+        except (KeyboardInterrupt, EOFError):
+            print(f"\n\n {GRAY}Aborted.{RESET}\n")
+            sys.exit(0)
 
     if selected["type"] == "archive":
         decompress_and_flash_rom(selected["path"])
@@ -454,5 +488,5 @@ if main_items:
         show_flashing_scripts_menu(selected["path"], selected["path"])
 
 else:
-    print("\n\033[91mNo ROM archives or folders found in storage!\033[0m\n")
-            
+    print(f"\n {RED}✖ No ROM archives or extracted folders found in storage!{RESET}\n")
+    
