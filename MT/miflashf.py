@@ -6,7 +6,7 @@ import time
 import shutil
 import subprocess
 
-# --- 100% Original Embedded Custom Scripts (Duchamp) ---
+# --- 100% Offline Embedded Custom Scripts (For Duchamp) ---
 RITTIK_XPOWER_CODE = r"""#!/data/data/com.termux/files/usr/bin/sh
 # ==========================================================
 # Flash Script for Fastboot ROM (Duchamp)
@@ -217,7 +217,19 @@ $fastboot oem cdms
 $fastboot reboot
 """
 
+def flatten_extracted_folder(target_dir):
+    while True:
+        items = os.listdir(target_dir)
+        if len(items) == 1 and os.path.isdir(os.path.join(target_dir, items[0])):
+            nested = os.path.join(target_dir, items[0])
+            for item in os.listdir(nested):
+                shutil.move(os.path.join(nested, item), target_dir)
+            os.rmdir(nested)
+            continue
+        break
+
 def find_working_rom_dir(base_dir):
+    flatten_extracted_folder(base_dir)
     for root, dirs, files in os.walk(base_dir):
         if "img" in dirs or "images" in dirs or "flash_all.sh" in files:
             return root
@@ -275,17 +287,6 @@ def check_mode():
                 sys.stdout.flush()
                 time.sleep(0.2)
 
-def format_script_name(file_name):
-    name_lower = file_name.lower()
-    if name_lower == "flash_all_lock.sh":
-        return "flash_all_lock.sh [\033[91mLock Bootloader\033[0m]"
-    elif name_lower == "flash_all.sh":
-        return "flash_all.sh [\033[92mWithout Locking Bootloader\033[0m]"
-    elif name_lower == "flash_all_except_storage.sh":
-        return "flash_all_except_storage.sh [\033[93mSave Data\033[0m]"
-    else:
-        return f"\033[92m{file_name}\033[0m"
-
 def execute_script(target_dir, script_name):
     file_path = os.path.join(target_dir, script_name)
     os.system(f"sed -i -e 's/\\r$//' '{file_path}' 2>/dev/null")
@@ -326,7 +327,7 @@ def setup_duchamp_scripts_if_needed(target_dir, original_path=""):
         elif os.path.isdir(os.path.join(target_dir, "images")):
             script_path = os.path.join(target_dir, "ritik_flash_.sh")
             with open(script_path, "w", encoding="utf-8") as f:
-                f.write(RITIK_FLASH_CODE)
+                f.write(RITTIK_FLASH_CODE)
             os.system(f"chmod +x '{script_path}'")
 
 def show_flashing_scripts_menu(rom_dir, original_path=""):
@@ -358,7 +359,7 @@ def show_flashing_scripts_menu(rom_dir, original_path=""):
 
     print("\n\033[93m--- Available Flashing Scripts (.sh) ---\033[0m")
     for index, file in enumerate(display_scripts, start=1):
-        print(f" \033[92m{index}\033[0m - {format_script_name(file)}")
+        print(f" \033[92m{index}\033[0m - \033[92m{file}\033[0m")
 
     while True:
         choice = input("\nEnter your \033[92mchoice\033[0m: ").strip()
@@ -381,7 +382,7 @@ def decompress_and_flash_rom(archive_file):
 
     if archive_lower.endswith((".tgz", ".tar.gz")):
         file_size = os.path.getsize(archive_file)
-        cmd = f"pv -s {file_size} '{archive_file}' | tar -xz -C '{RF}/' > /dev/null 2>&1"
+        cmd = f"pv -s {file_size} '{archive_file}' | tar --strip-components=1 -xz -C '{RF}/' > /dev/null 2>&1"
     elif archive_lower.endswith((".zip", ".7z", ".rar")):
         cmd = f"7z x -y '{archive_file}' -o'{RF}/' -bsp1 -bso0 -bse0"
     else:
@@ -392,6 +393,8 @@ def decompress_and_flash_rom(archive_file):
     if return_code != 0:
         print(f"\n\033[91mError during extraction (Exit Code: {return_code})\033[0m\n")
         sys.exit(1)
+
+    flatten_extracted_folder(RF)
 
     print("\n\033[92m✔ Decompression completed successfully!\033[0m\n")
 
@@ -452,3 +455,4 @@ if main_items:
 
 else:
     print("\n\033[91mNo ROM archives or folders found in storage!\033[0m\n")
+            
