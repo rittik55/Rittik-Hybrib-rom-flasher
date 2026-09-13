@@ -248,7 +248,7 @@ def flatten_extracted_folder(target_dir):
 def find_working_rom_dir(base_dir):
     flatten_extracted_folder(base_dir)
     for root, dirs, files in os.walk(base_dir):
-        if "img" in dirs or "images" in dirs or "flash_all.sh" in files:
+        if "img" in dirs or "images" in dirs or any(f.endswith(".sh") for f in files):
             return root
     return base_dir
 
@@ -328,7 +328,9 @@ def execute_script(target_dir, script_name):
     sys.exit(0)
 
 def setup_duchamp_scripts_if_needed(target_dir, original_path=""):
-    if os.path.exists(os.path.join(target_dir, "flash_all.sh")) or os.path.exists(os.path.join(target_dir, "flash_all_lock.sh")):
+    # अगर पहले से कोई टर्मक्स फ्लैश स्क्रिप्ट मौजूद है, तो जबरन ओवरराइट नहीं करेगा
+    existing = [f for f in os.listdir(target_dir) if f.endswith(".sh") and not f.lower().startswith(("linux_", "macos_", "mac_"))]
+    if existing:
         return
 
     check_str = (target_dir + " " + original_path).lower()
@@ -347,34 +349,40 @@ def setup_duchamp_scripts_if_needed(target_dir, original_path=""):
         elif os.path.isdir(os.path.join(target_dir, "images")):
             script_path = os.path.join(target_dir, "ritik_flash_.sh")
             with open(script_path, "w", encoding="utf-8") as f:
-                f.write(RITTIK_FLASH_CODE)
+                f.write(RITIK_FLASH_CODE)
             os.system(f"chmod +x '{script_path}'")
+
+def get_valid_scripts(target_dir):
+    # केवल वही स्क्रिप्ट दिखाएगा जो Termux में चलने लायक हैं (PC वाली को फ़िल्टर करेगा)
+    return [
+        f for f in os.listdir(target_dir)
+        if f.endswith(".sh") and not f.lower().startswith(("linux_", "macos_", "mac_"))
+    ]
 
 def show_flashing_scripts_menu(rom_dir, original_path=""):
     actual_dir = find_working_rom_dir(rom_dir)
     setup_duchamp_scripts_if_needed(actual_dir, original_path)
 
-    allowed_scripts = ["Rittik_xpower.sh", "ritik_flash_.sh", "flash_all.sh", "flash_all_lock.sh", "flash_all_except_storage.sh"]
+    while True:
+        display_scripts = get_valid_scripts(actual_dir)
+        display_scripts.sort()
 
-    filtered_scripts = [
-        f for f in os.listdir(actual_dir)
-        if f in allowed_scripts
-    ]
+        if display_scripts:
+            break
 
-    if filtered_scripts:
-        display_scripts = filtered_scripts
-    else:
-        display_scripts = [
-            f for f in os.listdir(actual_dir)
-            if f.endswith(".sh") and not f.lower().startswith(("linux_", "macos_", "mac_"))
-        ]
-
-    display_scripts.sort()
-
-    if not display_scripts:
-        print(f"\n {RED}✖ No valid flashing script found!{RESET}")
-        print(f" {GRAY}Target Folder:{RESET} {actual_dir}\n")
-        sys.exit(1)
+        # अगर कोई भी .sh स्क्रिप्ट नहीं मिली तो क्रैश नहीं होगा, बल्कि लाइव वेट करेगा
+        print(f"\n{RED}╭─ [!] No Flashing Script Found In ROM ─────────────╮{RESET}")
+        print(f"{RED}│{RESET}  {YELLOW}इस ROM में कोई भी Termux (.sh) स्क्रिप्ट नहीं मिली।{RESET}")
+        print(f"{RED}├───────────────────────────────────────────────────┤{RESET}")
+        print(f"{RED}│{RESET}  {BOLD}ROM फ़ोल्डर का पाथ (Target Path):{RESET}")
+        print(f"{RED}│{RESET}  {CYAN}{actual_dir}{RESET}")
+        print(f"{RED}├───────────────────────────────────────────────────┤{RESET}")
+        print(f"{RED}│{RESET}  {GREEN}आप क्या कर सकते हैं:{RESET}")
+        print(f"{RED}│{RESET}  अपनी कस्टम स्क्रिप्ट (जैसे: Termux_CleanFlash.sh)")
+        print(f"{RED}│{RESET}  सीधे ऊपर दिए गए फ़ोल्डर में पेस्ट कर दें।")
+        print(f"{RED}╰───────────────────────────────────────────────────╯")
+        
+        input(f"\n {BOLD}{YELLOW}फ़ाइल पेस्ट करने के बाद [Enter] दबाएँ (या Cancel के लिए Ctrl+C)...{RESET}")
 
     print(f"\n{ORANGE}╭─ Available Flashing Scripts{RESET}")
     for index, file in enumerate(display_scripts, start=1):
@@ -489,4 +497,3 @@ if main_items:
 
 else:
     print(f"\n {RED}✖ No ROM archives or extracted folders found in storage!{RESET}\n")
-    
