@@ -20,44 +20,26 @@ YELLOW = "\033[38;5;220m"
 BOLD = "\033[1m"
 RESET = "\033[0m"
 
-# --- URLs for Auto-Update ---
+# Auto-Update URLs
 VERSION_URL = "https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/version.txt"
-BASE_RAW_MT = "https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/MT/"
+INSTALL_CMD = "curl -fsSL https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/rittikinstall.sh | bash"
 
 def check_and_apply_update():
     try:
-        req = urllib.request.Request(VERSION_URL, headers={'User-Agent': 'Mozilla/5.0'})
+        # Check remote version with cache bypass
+        req = urllib.request.Request(f"{VERSION_URL}?t={int(time.time())}", headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req, timeout=3) as resp:
             remote_ver = resp.read().decode('utf-8').strip()
 
+        # If a new version is found, execute your installer directly
         if remote_ver and remote_ver != version:
-            print("\033[H\033[J")
-            print(f"{RED}╭───────────────────────────────────────────────────╮{RESET}")
-            print(f"{RED}│{RESET}  {BOLD}{YELLOW}⚡ NEW UPDATE DETECTED! [{version} ➔ {remote_ver}]{RESET}")
-            print(f"{RED}│{RESET}  {CYAN}Updating tool files, please wait...{RESET}")
-            print(f"{RED}╰───────────────────────────────────────────────────╯{RESET}\n")
-
-            prefix_bin = os.path.expandvars("$PREFIX/bin")
-            ritiktool_path = os.path.join(prefix_bin, "ritiktool")
-            miflashf_path = os.path.join(prefix_bin, "miflashf")
-
-            # Download updated files directly from GitHub into $PREFIX/bin
-            urllib.request.urlretrieve(BASE_RAW_MT + "mitool.py", ritiktool_path)
-            os.chmod(ritiktool_path, 0o755)
-
-            urllib.request.urlretrieve(BASE_RAW_MT + "miflashf.py", miflashf_path)
-            os.chmod(miflashf_path, 0o755)
-
-            print(f"{GREEN}✔ Successfully updated to v{remote_ver}!{RESET}")
-            print(f"{GRAY}Restarting tool...{RESET}\n")
-            time.sleep(1)
-
-            # Restart tool with new updated code
-            os.execv(sys.executable, [sys.executable, ritiktool_path])
+            print(f"\n{YELLOW}⚡ New update detected [{version} -> {remote_ver}]! Updating...{RESET}\n")
+            subprocess.run(INSTALL_CMD, shell=True)
+            sys.exit(0)
     except Exception:
         pass
 
-# Check for updates before rendering menu
+# Check update before showing menu
 check_and_apply_update()
 
 TOOLS = {
