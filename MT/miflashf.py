@@ -185,7 +185,10 @@ def scan_and_prepare_scripts(target_dir):
             except Exception:
                 content = ""
 
-            if "linux" in content or "bin/linux" in content:
+            if "com.termux" in content or "made by ritik" in content:
+                continue
+
+            if "fastboot=bin/linux" in content or "fastboot cannot be executed" in content:
                 if "clean" in f_lower:
                     out_name = "termux_CleanFlash.sh"
                 elif "dirty" in f_lower:
@@ -214,10 +217,10 @@ def get_valid_scripts(target_dir):
                 with open(src, 'r', encoding='utf-8', errors='ignore') as cf:
                     c = cf.read().lower()
 
-                if "bin/linux" in c or "fastboot=bin" in c:
+                if "fastboot=bin/linux" in c or "fastboot cannot be executed" in c:
                     continue
 
-                if "com.termux" in c or "$fastboot" in c or "fastboot" in c:
+                if "com.termux" in c or "made by ritik" in c or "$fastboot" in c or "fastboot" in c:
                     valid.append(f)
             except Exception:
                 pass
