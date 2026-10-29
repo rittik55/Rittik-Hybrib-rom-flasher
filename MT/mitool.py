@@ -7,7 +7,7 @@ import shutil
 import time
 import urllib.request
 
-version = "2.0.0"
+version = "2.0.1"
 
 # Colors & Formatting
 CYAN = "\033[38;5;51m"
