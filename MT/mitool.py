@@ -4,10 +4,8 @@ import subprocess
 import sys
 import os
 import shutil
-import time
-import urllib.request
 
-version = "2.0.1"
+version = "2.0.0"
 
 # Colors & Formatting
 CYAN = "\033[38;5;51m"
@@ -16,31 +14,8 @@ ORANGE = "\033[38;5;208m"
 GREEN = "\033[38;5;48m"
 RED = "\033[38;5;196m"
 GRAY = "\033[38;5;242m"
-YELLOW = "\033[38;5;220m"
 BOLD = "\033[1m"
 RESET = "\033[0m"
-
-# Auto-Update URLs
-VERSION_URL = "https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/version.txt"
-INSTALL_CMD = "curl -fsSL https://raw.githubusercontent.com/rittik55/Rittik-Hybrib-rom-flasher/main/rittikinstall.sh | bash"
-
-def check_and_apply_update():
-    try:
-        # Check remote version with cache bypass
-        req = urllib.request.Request(f"{VERSION_URL}?t={int(time.time())}", headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=3) as resp:
-            remote_ver = resp.read().decode('utf-8').strip()
-
-        # If a new version is found, execute your installer directly
-        if remote_ver and remote_ver != version:
-            print(f"\n{YELLOW}⚡ New update detected [{version} -> {remote_ver}]! Updating...{RESET}\n")
-            subprocess.run(INSTALL_CMD, shell=True)
-            sys.exit(0)
-    except Exception:
-        pass
-
-# Check update before showing menu
-check_and_apply_update()
 
 TOOLS = {
     "1": ("Flash Fastboot / Hybrid ROM", "$PREFIX/bin/miflashf")
@@ -53,16 +28,19 @@ except:
 
 box_width = min(term_width - 2, 54)
 
+# Fastboot/ADB quick status check
 def get_quick_status():
     has_fb = shutil.which("fastboot") or shutil.which("termux-fastboot")
     return f"{GREEN}READY{RESET}" if has_fb else f"{RED}MISSING FASTBOOT{RESET}"
 
 print()
+# Header Box
 print(f"{PURPLE}╭{'─' * (box_width - 2)}╮{RESET}")
 print(f"{PURPLE}│{RESET}  {BOLD}{CYAN}⚡ RITIK TOOL{RESET} {GRAY}v{version}{RESET}" + " " * (box_width - len(f"  ⚡ RITIK TOOL v{version}") - 3) + f"{PURPLE}│{RESET}")
 print(f"{PURPLE}│{RESET}  {GRAY}Status: {get_quick_status()}{RESET}" + " " * (box_width - 24) + f"{PURPLE}│{RESET}")
 print(f"{PURPLE}├{'─' * (box_width - 2)}┤{RESET}")
 
+# Body / Options
 print(f"{PURPLE}│{RESET}  {BOLD}MAIN MENU{RESET}" + " " * (box_width - 13) + f"{PURPLE}│{RESET}")
 for key, (desc, _) in TOOLS.items():
     line = f"  {ORANGE}[{key}]{RESET} {desc}"
