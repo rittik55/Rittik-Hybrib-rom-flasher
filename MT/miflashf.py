@@ -6,7 +6,6 @@ import time
 import shutil
 import subprocess
 
-# --- Modern UI Styles & 256-Colors ---
 ORANGE = "\033[38;5;208m"
 CYAN   = "\033[38;5;51m"
 GREEN  = "\033[38;5;48m"
@@ -16,7 +15,6 @@ YELLOW = "\033[38;5;220m"
 BOLD   = "\033[1m"
 RESET  = "\033[0m"
 
-# --- Universal Header & Branding Template (100% Offline) ---
 RITIK_TERMUX_HEADER = r"""#!/data/data/com.termux/files/usr/bin/sh
 cd "$(dirname "$0")" || exit 1
 
@@ -173,11 +171,9 @@ def scan_and_prepare_scripts(target_dir):
     for f in os.listdir(target_dir):
         f_lower = f.lower()
 
-        # ऑफिशियल ROM को छोड़ें
         if f_lower.startswith("flash_all"):
             continue
 
-        # सिर्फ Mac-ओन्ली फाइल (जिसमें linux न हो) को छोड़ें
         if ("mac" in f_lower or "darwin" in f_lower) and "linux" not in f_lower:
             continue
 
@@ -189,7 +185,6 @@ def scan_and_prepare_scripts(target_dir):
             except Exception:
                 content = ""
 
-            # अगर फाइल में linux या bin/linux मौजूद है
             if "linux" in content or "bin/linux" in content:
                 if "clean" in f_lower:
                     out_name = "termux_CleanFlash.sh"
@@ -206,19 +201,26 @@ def get_valid_scripts(target_dir):
     for f in os.listdir(target_dir):
         f_lower = f.lower()
 
-        # अगर सिर्फ Mac-ओन्ली नाम है तो छोड़ें
         if ("mac" in f_lower or "darwin" in f_lower) and "linux" not in f_lower:
             continue
 
-        # 1. टूल द्वारा बनाई गई termux स्क्रिप्ट्स
         if f.startswith("termux_") and f.endswith(".sh"):
             valid.append(f)
-        # 2. ऑफिशियल flash_all स्क्रिप्ट्स
         elif f_lower.startswith("flash_all") and f.endswith(".sh"):
             valid.append(f)
-        # 3. बाहर से पेस्ट की गई कोई भी .sh स्क्रिप्ट (सीधे मेन्यू में आएगी)
-        elif f_lower.endswith(".sh") and not f.startswith("termux_"):
-            valid.append(f)
+        elif f_lower.endswith(".sh"):
+            src = os.path.join(target_dir, f)
+            try:
+                with open(src, 'r', encoding='utf-8', errors='ignore') as cf:
+                    c = cf.read().lower()
+
+                if "bin/linux" in c or "fastboot=bin" in c:
+                    continue
+
+                if "com.termux" in c or "$fastboot" in c or "fastboot" in c:
+                    valid.append(f)
+            except Exception:
+                pass
 
     return sorted(list(set(valid)))
 
@@ -312,8 +314,6 @@ def decompress_and_flash_rom(archive_file):
     print(f"\n {GREEN}✔ Decompression completed successfully!{RESET}")
 
     show_flashing_scripts_menu(RF, archive_file)
-
-# ----------------- Main Scan & Selector -----------------
 
 valid_extensions = (".tgz", ".tar.gz", ".zip", ".7z", ".rar")
 ignored_keywords = ["module", "ksun", "magisk", "susfs", "kernel"]
