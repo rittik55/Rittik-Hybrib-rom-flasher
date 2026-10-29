@@ -173,11 +173,11 @@ def scan_and_prepare_scripts(target_dir):
     for f in os.listdir(target_dir):
         f_lower = f.lower()
 
-        # Ignore official ROM scripts (flash_all)
+        # 1. ऑफिशियल ROM स्क्रिप्ट्स (flash_all) को बिल्कुल न छुए
         if f_lower.startswith("flash_all"):
             continue
 
-        # Handle custom ROM scripts (Checking content inside .sh)
+        # 2. सिर्फ .sh फाइल्स को चेक करेगा जो termux_ से शुरू न हों
         if f_lower.endswith(".sh") and not f.startswith("termux_"):
             src = os.path.join(target_dir, f)
             try:
@@ -186,14 +186,13 @@ def scan_and_prepare_scripts(target_dir):
             except Exception:
                 content = ""
 
-            # Check if it actually contains linux or bin/linux paths
+            # सिर्फ वही फाइल कन्वर्ट होगी जिसके अंदर linux या bin/linux लिखा हो
             if "linux" in content or "bin/linux" in content:
                 if "clean" in f_lower:
                     out_name = "termux_CleanFlash.sh"
                 elif "dirty" in f_lower:
                     out_name = "termux_DirtyFlash.sh"
                 else:
-                    # Universal fallback for any custom named script
                     out_name = f"termux_{f}"
 
                 dst = os.path.join(target_dir, out_name)
@@ -202,13 +201,29 @@ def scan_and_prepare_scripts(target_dir):
 def get_valid_scripts(target_dir):
     valid = []
     for f in os.listdir(target_dir):
-        # Auto-generated custom ROM scripts
+        f_lower = f.lower()
+        
+        # 1. टूल द्वारा ऑटो-कन्वर्टेड termux स्क्रिप्ट्स
         if f.startswith("termux_") and f.endswith(".sh"):
             valid.append(f)
-        # Official ROM original scripts
-        elif f.lower().startswith("flash_all") and f.endswith(".sh"):
+            
+        # 2. ऑफिशियल ROM की ओरिजिनल flash_all स्क्रिप्ट्स
+        elif f_lower.startswith("flash_all") and f.endswith(".sh"):
             valid.append(f)
-    return valid
+            
+        # 3. बाहर से पेस्ट की गई स्क्रिप्ट्स (चाहे यूजर ने बनाई हो या बाहर से डाली हो)
+        elif f_lower.endswith(".sh") and not f_lower.startswith("termux_"):
+            src = os.path.join(target_dir, f)
+            try:
+                with open(src, 'r', encoding='utf-8', errors='ignore') as cf:
+                    c = cf.read().lower()
+                # अगर उसमें linux, termux या fastboot मौजूद है तो मेन्यू में शामिल करेगा
+                if "linux" in c or "bin/linux" in c or "termux" in c or "fastboot" in c:
+                    valid.append(f)
+            except Exception:
+                pass
+
+    return sorted(list(set(valid)))
 
 def execute_script(target_dir, script_name):
     file_path = os.path.join(target_dir, script_name)
@@ -237,7 +252,6 @@ def show_flashing_scripts_menu(rom_dir, original_path=""):
 
     while True:
         display_scripts = get_valid_scripts(actual_dir)
-        display_scripts.sort()
 
         if display_scripts:
             break
