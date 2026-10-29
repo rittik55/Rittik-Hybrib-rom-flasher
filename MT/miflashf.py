@@ -173,12 +173,12 @@ def scan_and_prepare_scripts(target_dir):
     for f in os.listdir(target_dir):
         f_lower = f.lower()
 
-        # Ignore official ROM scripts (flash_all)
+        # ऑफिशियल ROM को छोड़ें
         if f_lower.startswith("flash_all"):
             continue
 
-        # Ignore MacOS scripts by name
-        if "mac" in f_lower or "darwin" in f_lower:
+        # सिर्फ Mac-ओन्ली फाइल (जिसमें linux न हो) को छोड़ें
+        if ("mac" in f_lower or "darwin" in f_lower) and "linux" not in f_lower:
             continue
 
         if f_lower.endswith(".sh") and not f.startswith("termux_"):
@@ -189,11 +189,7 @@ def scan_and_prepare_scripts(target_dir):
             except Exception:
                 content = ""
 
-            # Ignore MacOS script by content
-            if "macos" in content or "bin/macos" in content:
-                continue
-
-            # Check if it contains linux or bin/linux paths
+            # अगर फाइल में linux या bin/linux मौजूद है
             if "linux" in content or "bin/linux" in content:
                 if "clean" in f_lower:
                     out_name = "termux_CleanFlash.sh"
@@ -210,27 +206,19 @@ def get_valid_scripts(target_dir):
     for f in os.listdir(target_dir):
         f_lower = f.lower()
 
-        # Strictly block Mac scripts from menu
-        if "mac" in f_lower or "darwin" in f_lower:
+        # अगर सिर्फ Mac-ओन्ली नाम है तो छोड़ें
+        if ("mac" in f_lower or "darwin" in f_lower) and "linux" not in f_lower:
             continue
 
-        # Auto-generated custom ROM scripts
+        # 1. टूल द्वारा बनाई गई termux स्क्रिप्ट्स
         if f.startswith("termux_") and f.endswith(".sh"):
             valid.append(f)
-        # Official ROM original scripts
+        # 2. ऑफिशियल flash_all स्क्रिप्ट्स
         elif f_lower.startswith("flash_all") and f.endswith(".sh"):
             valid.append(f)
-        # Externally pasted custom scripts
-        elif f_lower.endswith(".sh") and not f_lower.startswith("termux_"):
-            src = os.path.join(target_dir, f)
-            try:
-                with open(src, 'r', encoding='utf-8', errors='ignore') as cf:
-                    c = cf.read().lower()
-                if "macos" not in c and "bin/macos" not in c:
-                    if "fastboot" in c or "linux" in c or "termux" in c:
-                        valid.append(f)
-            except Exception:
-                pass
+        # 3. बाहर से पेस्ट की गई कोई भी .sh स्क्रिप्ट (सीधे मेन्यू में आएगी)
+        elif f_lower.endswith(".sh") and not f.startswith("termux_"):
+            valid.append(f)
 
     return sorted(list(set(valid)))
 
