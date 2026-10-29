@@ -177,16 +177,25 @@ def scan_and_prepare_scripts(target_dir):
         if f_lower.startswith("flash_all"):
             continue
 
-        # Handle custom ROM scripts (clean and dirty)
+        # Handle custom ROM scripts (Checking content inside .sh)
         if f_lower.endswith(".sh") and not f.startswith("termux_"):
-            out_name = None
-            if "clean" in f_lower:
-                out_name = "termux_CleanFlash.sh"
-            elif "dirty" in f_lower:
-                out_name = "termux_DirtyFlash.sh"
+            src = os.path.join(target_dir, f)
+            try:
+                with open(src, 'r', encoding='utf-8', errors='ignore') as check_f:
+                    content = check_f.read().lower()
+            except Exception:
+                content = ""
 
-            if out_name:
-                src = os.path.join(target_dir, f)
+            # Check if it actually contains linux or bin/linux paths
+            if "linux" in content or "bin/linux" in content:
+                if "clean" in f_lower:
+                    out_name = "termux_CleanFlash.sh"
+                elif "dirty" in f_lower:
+                    out_name = "termux_DirtyFlash.sh"
+                else:
+                    # Universal fallback for any custom named script
+                    out_name = f"termux_{f}"
+
                 dst = os.path.join(target_dir, out_name)
                 auto_convert_pc_script_to_termux(src, dst)
 
